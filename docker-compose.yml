@@ -1,0 +1,14 @@
+version: "3.8"
+
+networks:
+  nginx:
+    name: net_nginx
+    external: true
+
+services:
+  neko_bin:
+    image: ghcr.io/atakku/neko_bin:latest
+    container_name: neko_bin
+    restart: unless-stopped
+    networks:
+      - nginx

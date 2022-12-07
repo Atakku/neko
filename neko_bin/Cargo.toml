@@ -1,0 +1,15 @@
+[package]
+name = "neko_bin"
+version = "0.0.1"
+authors = { workspace = true }
+edition = { workspace = true }
+repository = { workspace = true }
+license = { workspace = true }
+
+[dependencies]
+# Actix
+actix = { workspace = true }
+actix-web = { workspace = true }
+
+# Neko
+neko_env = { workspace = true, features = ["http"] }

@@ -1,0 +1,3 @@
+*
+!target/release/neko_*
+target/release/neko_*.d

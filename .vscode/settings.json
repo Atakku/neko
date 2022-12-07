@@ -1,0 +1,9 @@
+{
+  "editor.tabSize": 2,
+  "files.exclude": {
+    "target/": true,
+    ".*ignore": true,
+    "Cargo.lock": true,
+    "LICENSE*": true
+  },
+}
