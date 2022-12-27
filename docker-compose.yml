@@ -6,9 +6,15 @@ networks:
     external: true
 
 services:
-  neko_bin:
-    image: ghcr.io/atakku/neko_bin:latest
-    container_name: neko_bin
+  neko_bin_api:
+    image: ghcr.io/atakku/neko_bin_api:latest
+    container_name: neko_bin_api
+    restart: unless-stopped
+    networks:
+      - nginx
+  neko_bin_web:
+    image: ghcr.io/atakku/neko_bin_web:latest
+    container_name: neko_bin_web
     restart: unless-stopped
     networks:
       - nginx

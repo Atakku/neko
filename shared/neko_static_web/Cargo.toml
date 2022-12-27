@@ -1,0 +1,16 @@
+[package]
+name = "neko_static_web"
+version = "0.0.0"
+authors = { workspace = true }
+edition = { workspace = true }
+repository = { workspace = true }
+license = { workspace = true }
+
+[features]
+http = []
+
+[dependencies]
+actix-web = { workspace = true }
+mime_guess = { workspace = true }
+rust-embed = { workspace = true, features = ["actix"] }
+neko_env = { workspace = true, features = ["http"] }

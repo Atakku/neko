@@ -6,10 +6,36 @@ edition = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
 
-[dependencies]
-# Actix
-actix = { workspace = true }
-actix-web = { workspace = true }
+[features]
+default = ["all"]
+all = ["desktop", "web", "api"]
+desktop = ["dep:dioxus", "dep:dioxus-desktop"]
+web = ["dep:dioxus", "dep:dioxus-web"]
+api = ["dep:actix", "dep:actix-web", "dep:neko_env", "neko_env?/http"]
 
-# Neko
-neko_env = { workspace = true, features = ["http"] }
+[[bin]]
+name = "neko_bin_desktop"
+path = "src/frontend/desktop.rs"
+required-features = ["desktop"]
+
+[[bin]]
+name = "neko_bin_web"
+path = "src/frontend/web.rs"
+required-features = ["web"]
+
+[[bin]]
+name = "neko_bin_api"
+path = "src/api/main.rs"
+required-features = ["api"]
+
+[dependencies]
+actix = { workspace = true, optional = true }
+actix-web = { workspace = true, optional = true }
+
+dioxus = { workspace = true, optional = true }
+dioxus-desktop = { workspace = true, optional = true }
+dioxus-web = { workspace = true, optional = true }
+dioxus-router = { workspace = true, optional = true }
+
+# Shared neko crates
+neko_env = { workspace = true, optional = true }

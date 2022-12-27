@@ -16,7 +16,9 @@ jobs:
         include: 
           - 
             project: "neko_bin"
-            deps: []
+            sys_deps: []
+            web: true
+            api: true
       fail-fast: true
       max-parallel: 1
     steps:
@@ -30,12 +32,6 @@ jobs:
           toolchain: nightly
           override: true
       - 
-        name: Build Rust project
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release -p ${{ matrix.project }}
-      -
         name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
       -
@@ -46,12 +42,20 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       -
-        name: Prepare Docker metadata
-        id: meta
+        name: Build API executable
+        if: ${{ matrix.api }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release -p ${{ matrix.project }} --bin ${{ matrix.project }}_api --no-default-features --features api
+      -
+        name: Prepare Docker metadata for publishing API executable
+        if: ${{ matrix.api }}
+        id: meta_api
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/atakku/${{ matrix.project }}
+            ghcr.io/atakku/${{ matrix.project }}_api
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -59,19 +63,76 @@ jobs:
             type=ref,event=branch
             type=sha
       -
-        name: Create Dockerfile for publishing
+        name: Create Dockerfile for publishing API executable
+        if: ${{ matrix.api }}
         run: |
-          echo "FROM docker.io/library/debian:buster-slim" >> Dockerfile
-          echo "CMD [\"${{ matrix.project }}\"]" >> Dockerfile
+          echo "FROM docker.io/library/debian:buster-slim" > Dockerfile
+          echo "CMD [\"${{ matrix.project }}_api\"]" >> Dockerfile
           echo "EXPOSE 8080" >> Dockerfile
           echo "RUN apt-get update && rm -rf /var/lib/apt/lists/*" >> Dockerfile
-          echo "COPY target/release/${{ matrix.project }} /usr/local/bin/${{ matrix.project }}" >> Dockerfile
+          echo "COPY target/release/${{ matrix.project }}_api /usr/local/bin/${{ matrix.project }}"_api >> Dockerfile
       -
-        name: Build Docker & Push container to GHCR
+        name: Build Docker & Push API container to GHCR
+        if: ${{ matrix.api }}
         uses: docker/build-push-action@v3
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta_api.outputs.tags }}
+          labels: ${{ steps.meta_api.outputs.labels }}
+      -
+        name: Install trunk for building Web frontend executable
+        if: ${{ matrix.web }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: trunk
+      -
+        name: Run trunk to prepare assets for bundling
+        if: ${{ matrix.web }}
+        run: |
+          echo -n "<!DOCTYPE html><html><head><meta charset=\"utf-8\">" >> index.html
+          echo -n "<link data-trunk rel=\"rust\" href=\"${{ matrix.project }}\" data-bin=\"${{ matrix.project }}_web\" data-cargo-no-default-features data-cargo-features=\"web\"/>"
+          echo -n "</head><body><div id=\"main\"></div></body></html>" >> index.html
+          trunk build --release
+      -
+        name: Build Web frontend executable
+        if: ${{ matrix.web }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release -p neko_static_web
+      -
+        name: Prepare Docker metadata for publishing Web executable
+        if: ${{ matrix.web }}
+        id: meta_web
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ghcr.io/atakku/${{ matrix.project }}_web
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=ref,event=branch
+            type=sha
+      -
+        name: Create Dockerfile for publishing Web executable
+        if: ${{ matrix.web }}
+        run: |
+          echo "FROM docker.io/library/debian:buster-slim" > Dockerfile
+          echo "CMD [\"${{ matrix.project }}_web\"]" >> Dockerfile
+          echo "EXPOSE 8080" >> Dockerfile
+          echo "COPY target/release/neko_static_web /usr/local/bin/${{ matrix.project }}"_web >> Dockerfile
+      -
+        name: Build Docker & Push Web container to GHCR
+        if: ${{ matrix.web }}
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          tags: ${{ steps.meta_web.outputs.tags }}
+          labels: ${{ steps.meta_web.outputs.labels }}
+      -

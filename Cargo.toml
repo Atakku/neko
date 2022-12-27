@@ -16,6 +16,12 @@ actix-http = "3.2"
 actix-session = "0.7"
 actix-web = "4.2"
 
+# Dioxus
+dioxus = { git = "https://github.com/DioxusLabs/dioxus"}
+dioxus-web = { git = "https://github.com/DioxusLabs/dioxus"}
+dioxus-desktop = { git = "https://github.com/DioxusLabs/dioxus"}
+dioxus-router = { git = "https://github.com/DioxusLabs/dioxus"}
+
 # Logging
 env_logger = "0.10"
 log = "0.4"
@@ -27,6 +33,14 @@ serde_json = "1"
 # Other
 lazy_static = "1.4"
 mime = "0.3"
+mime_guess = "2.0"
+rust-embed = "6.4"
+
 
 # Neko
 neko_env = { path = "./shared/neko_env" }
+
+[profile.release]
+lto = true
+debug = false
+incremental = false
