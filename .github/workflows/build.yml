@@ -135,4 +135,3 @@ jobs:
           push: true
           tags: ${{ steps.meta_web.outputs.tags }}
           labels: ${{ steps.meta_web.outputs.labels }}
-      -
