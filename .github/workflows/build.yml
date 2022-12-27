@@ -107,7 +107,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release -p neko_static_web
+          args: --release -p neko_static_app
       -
         name: Prepare Docker metadata for publishing Web executable
         if: ${{ matrix.web }}
@@ -129,7 +129,7 @@ jobs:
           echo "FROM docker.io/library/debian:buster-slim" > Dockerfile
           echo "CMD [\"${{ matrix.project }}_web\"]" >> Dockerfile
           echo "EXPOSE 8080" >> Dockerfile
-          echo "COPY target/release/neko_static_web /usr/local/bin/${{ matrix.project }}"_web >> Dockerfile
+          echo "COPY target/release/neko_static_app /usr/local/bin/${{ matrix.project }}"_web >> Dockerfile
       -
         name: Build Docker & Push Web container to GHCR
         if: ${{ matrix.web }}
