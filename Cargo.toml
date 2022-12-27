@@ -41,6 +41,8 @@ rust-embed = "6.4"
 neko_env = { path = "./shared/neko_env" }
 
 [profile.release]
-lto = true
+opt-level = 3
 debug = false
+strip = true
+lto = true
 incremental = false
