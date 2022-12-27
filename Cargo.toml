@@ -43,6 +43,6 @@ neko_env = { path = "./shared/neko_env" }
 [profile.release]
 opt-level = 3
 debug = false
-strip = true
+#strip = true //trunk wont work
 lto = true
 incremental = false
