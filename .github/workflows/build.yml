@@ -30,7 +30,12 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-          override: true
+      -
+        name: Setup Wasm Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: wasm32-unknown-unknown
       - 
         name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
