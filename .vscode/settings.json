@@ -4,6 +4,7 @@
     "target/": true,
     ".*ignore": true,
     "Cargo.lock": true,
-    "LICENSE*": true
+    "LICENSE*": true,
+    "dist/": true,
   },
 }
