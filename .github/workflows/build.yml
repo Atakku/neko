@@ -92,8 +92,8 @@ jobs:
         name: Run trunk to prepare assets for bundling
         if: ${{ matrix.web }}
         run: |
-          echo -n "<!DOCTYPE html><html><head><meta charset=\"utf-8\">" >> index.html
-          echo -n "<link data-trunk rel=\"rust\" href=\"${{ matrix.project }}\" data-bin=\"${{ matrix.project }}_web\" data-cargo-no-default-features data-cargo-features=\"web\"/>"
+          echo -n "<!DOCTYPE html><html><head><meta charset=\"utf-8\">" > index.html
+          echo -n "<link data-trunk rel=\"rust\" href=\"${{ matrix.project }}\" data-bin=\"${{ matrix.project }}_web\" data-cargo-no-default-features data-cargo-features=\"web\"/>" >> index.html
           echo -n "</head><body><div id=\"main\"></div></body></html>" >> index.html
           trunk build --release
       -
