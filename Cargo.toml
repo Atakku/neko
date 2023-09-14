@@ -1,0 +1,28 @@
+# Copyright 2023 Atakku <https://atakku.dev>
+#
+# This project is dual licensed under MIT and Apache.
+
+[workspace]
+members = ["core", "modules/*", "plugins/*", "runtime"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+# local dependencies
+neko_core.path = "core"
+neko_poise.path = "modules/poise"
+neko_sqlx.path = "modules/sqlx"
+neko_discord.path = "plugins/discord"
+# external dependencies
+futures = "0.3"
+futures-locks = "0.7"
+log = "0.4"
+poise = { version = "0.5", git = "https://github.com/serenity-rs/poise", branch = "current" }
+pretty_env_logger = "0.4"
+sea-query = { version = "0", features = ["derive"] }
+sea-query-binder = { version = "0", features = ["sqlx-postgres"] }
+sqlx = "0.7"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

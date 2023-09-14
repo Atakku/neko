@@ -1,0 +1,21 @@
+# Copyright 2023 Atakku <https://atakku.dev>
+#
+# This project is dual licensed under MIT and Apache.
+
+[package]
+name = "neko_discord"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+# local dependencies
+neko_core.workspace = true
+neko_poise.workspace = true
+neko_sqlx.workspace = true
+# external dependencies
+log.workspace = true
+poise.workspace = true
+sea-query-binder.workspace = true
+sea-query.workspace = true
+sqlx.workspace = true
