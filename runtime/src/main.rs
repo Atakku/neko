@@ -3,6 +3,7 @@
 // This project is dual licensed under MIT and Apache.
 
 use neko_core::*;
+use neko_mods::*;
 
 #[tokio::main]
 async fn main() -> R {
@@ -13,7 +14,7 @@ async fn main() -> R {
   }
   pretty_env_logger::init();
   let mut fw = Framework::new();
-  fw.init_module(neko_discord::DiscordPlugin {})?;
+  fw.init_module(Discord)?;
   fw.run().await?;
   Ok(())
 }

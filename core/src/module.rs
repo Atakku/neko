@@ -15,6 +15,7 @@ impl Framework {
     self.modules.has::<T>()
   }
 
+  /// Load a supplied module
   pub fn init_module<T: Module>(&mut self, module: T) -> Res<&mut Self> {
     log::info!("Initializing {}", std::any::type_name::<T>());
     module.init(self)?;
@@ -22,6 +23,7 @@ impl Framework {
     Ok(self)
   }
 
+  /// Check if module is already loaded, and if not, load a default impl
   pub fn req_module<T: Module + Default>(&mut self) -> Res<&mut T> {
     if !self.has_module::<T>() {
       self.init_module(T::default())?;

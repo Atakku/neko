@@ -3,7 +3,7 @@
 # This project is dual licensed under MIT and Apache.
 
 [package]
-name = "neko_sqlx"
+name = "neko_mods"
 version = "0.0.0"
 edition.workspace = true
 license.workspace = true
@@ -11,5 +11,10 @@ license.workspace = true
 [dependencies]
 # local dependencies
 neko_core.workspace = true
+neko_db.workspace = true
 # external dependencies
-sqlx.workspace = true
+futures.workspace = true
+poise.workspace = true
+tokio.workspace = true
+sea-query.workspace = true
+log.workspace = true

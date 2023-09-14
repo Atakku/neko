@@ -7,7 +7,8 @@ license.workspace = true
 [dependencies]
 # local dependencies
 neko_core.workspace = true
-neko_discord.workspace = true
+neko_db.workspace = true
+neko_mods.workspace = true
 # external dependencies
 pretty_env_logger.workspace = true
 tokio.workspace = true
