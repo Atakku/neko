@@ -2,20 +2,14 @@
 #
 # This project is dual licensed under MIT and Apache.
 
-[workspace]
-members = ["core", "database", "modules", "runtime"]
-resolver = "2"
-
-[workspace.package]
+[package]
+name = "neko"
+version = "0.0.1"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
-[workspace.dependencies]
-# local dependencies
-neko_core.path = "core"
-neko_db.path = "database"
-neko_mods.path = "modules"
-# external dependencies
+[dependencies]
+async-trait = "0.1"
 futures = "0.3"
 futures-locks = "0.7"
 log = "0.4"

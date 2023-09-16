@@ -2,13 +2,11 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-#![feature(trait_alias)]
-
 use std::error::Error;
 
-pub mod framework;
+mod framework;
 pub use framework::*;
-pub mod module;
+mod module;
 pub use module::*;
 mod state;
 

@@ -2,9 +2,8 @@
 //
 // This project is dual licensed under MIT and Apache.
 
+use super::{Framework, Res, R};
 use std::any::Any;
-
-use crate::{framework::Framework, Res, R};
 
 pub trait Module: Any {
   fn init(&self, fw: &mut Framework) -> R;

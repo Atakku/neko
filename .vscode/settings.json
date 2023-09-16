@@ -4,10 +4,5 @@
     "**/target": true,
     "**/Cargo.lock": true,
     "**/LICENSE-*": true
-  },
-  "rust-analyzer.cargo.features": "all",
-  "material-icon-theme.folders.associations": {
-    "modules": "packages",
-    "runtime": "app",
   }
 }

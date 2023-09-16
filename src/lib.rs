@@ -2,11 +2,9 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-mod discord;
-pub use discord::Discord;
+#![feature(trait_alias)]
+#![feature(async_fn_in_trait)]
 
-mod steam;
-pub use steam::*;
-
-mod poise;
-pub use poise::Poise;
+pub mod core;
+pub mod modules;
+pub mod schema;

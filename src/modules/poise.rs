@@ -2,8 +2,8 @@
 //
 // This project is dual licensed under MIT and Apache.
 
+use crate::core::*;
 use futures::future::join_all;
-use neko_core::*;
 use poise::{
   serenity_prelude::{Context as SCtx, GatewayIntents},
   BoxFuture, Command, Context, Event, FrameworkContext, FrameworkOptions,
@@ -13,7 +13,8 @@ pub type Fw = poise::Framework<StateLock, Err>;
 pub type FwCtx<'a> = FrameworkContext<'a, StateLock, Err>;
 pub type Ctx<'a> = Context<'a, StateLock, Err>;
 pub type Cmd = Command<StateLock, Err>;
-pub type EventHandler = for<'a> fn(&'a SCtx, &'a Event<'a>, FwCtx<'a>, &'a StateLock) -> BoxFuture<'a, R>;
+pub type EventHandler =
+  for<'a> fn(&'a SCtx, &'a Event<'a>, FwCtx<'a>, &'a StateLock) -> BoxFuture<'a, R>;
 
 /// Poise wrapper module, to let other modules add commands and subscribe to events easily
 pub struct Poise {

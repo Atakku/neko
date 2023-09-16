@@ -2,8 +2,8 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use neko_core::*;
-use neko_mods::*;
+use neko::core::*;
+use neko::modules::*;
 
 #[tokio::main]
 async fn main() -> R {
@@ -15,6 +15,7 @@ async fn main() -> R {
   pretty_env_logger::init();
   let mut fw = Framework::new();
   fw.init_module(Discord)?;
+  fw.init_module(Steam)?;
   fw.run().await?;
   Ok(())
 }

@@ -2,13 +2,12 @@
 //
 // This project is dual licensed under MIT and Apache.
 
+use super::Res;
 use std::{
   any::{type_name, Any, TypeId},
   collections::HashMap,
   hash::{BuildHasherDefault, Hasher},
 };
-
-use crate::Res;
 
 // Code taken from https://github.com/gotham-rs/gotham/blob/main/gotham/src/state/mod.rs
 #[derive(Default)]

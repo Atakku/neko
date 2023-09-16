@@ -2,14 +2,13 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use futures::future::{join_all, LocalBoxFuture};
-use futures_locks::RwLock;
-use tokio::task::JoinHandle;
-
-use crate::{
+use super::{
   state::{AnyData, State, SyncData},
   Res, R,
 };
+use futures::future::{join_all, LocalBoxFuture};
+use futures_locks::RwLock;
+use tokio::task::JoinHandle;
 
 pub type ModuleState = State<dyn AnyData>;
 pub type RuntimeState = State<dyn SyncData>;
