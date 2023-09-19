@@ -4,10 +4,9 @@
 
 use crate::{
   core::*,
-  interface::drg::{DeepRockGalacticApi, Variant},
+  interface::drg::{Variant, DeepRockGalacticApi},
   modules::{
     poise::{Ctx, Poise},
-    reqwest::Reqwest,
   },
 };
 use std::fmt;
@@ -16,7 +15,6 @@ pub struct DeepRockGalactic;
 
 impl Module for DeepRockGalactic {
   fn init(&mut self, fw: &mut Framework) -> R {
-    fw.req_module::<Reqwest>()?;
     let poise = fw.req_module::<Poise>()?;
     poise.commands.push(drg());
     Ok(())
@@ -25,7 +23,7 @@ impl Module for DeepRockGalactic {
 #[poise::command(prefix_command, slash_command)]
 pub async fn drg(ctx: Ctx<'_>) -> R {
   let m = ctx.reply("Fetching Deep Dives...").await?;
-  let res = get_reqwest!(ctx.data()).get_deepdives().await?;
+  let res = reqwest!().get_deepdives().await?;
   m.edit(ctx, |m| {
     m.embed(|e| {
       for variant in res.variants {

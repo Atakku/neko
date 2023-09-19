@@ -15,11 +15,10 @@ pub type RuntimeState = State<dyn SyncData>;
 
 pub type StateLock = RwLock<RuntimeState>;
 pub type RuntimeClosure =
-  fn(&mut ModuleState, StateLock) -> Res<LocalBoxFuture<'static, Res<Option<JoinHandle<R>>>>>;
+  fn(&mut ModuleState) -> Res<LocalBoxFuture<'static, Res<Option<JoinHandle<R>>>>>;
 
 pub struct Framework {
   pub modules: ModuleState,
-  pub state: RuntimeState,
   pub runtime: Vec<RuntimeClosure>,
 }
 
@@ -27,17 +26,15 @@ impl Framework {
   pub fn new() -> Self {
     Self {
       modules: State::new(),
-      state: State::new(),
       runtime: vec![],
     }
   }
 
   pub async fn run(mut self) -> R {
-    let lock = RwLock::new(self.state);
     let mut handles = vec![];
     // Run all async mains and collect any handles
     for run in self.runtime {
-      if let Some(handle) = run(&mut self.modules, lock.clone())?.await? {
+      if let Some(handle) = run(&mut self.modules)?.await? {
         handles.push(handle);
       }
     }

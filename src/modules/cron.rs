@@ -12,7 +12,7 @@ pub struct Cron {
 
 impl Module for Cron {
   fn init(&mut self, fw: &mut Framework) -> R {
-    fw.runtime.push(|mds, _| {
+    fw.runtime.push(|mds| {
       let cron = mds.take::<Self>()?;
       Ok(Box::pin(async move {
         let sched = JobScheduler::new().await?;

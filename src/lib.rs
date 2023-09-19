@@ -9,6 +9,7 @@
 pub mod macros;
 
 pub mod core;
+
 pub mod interface {
   automod::dir!(pub "src/interface");
 }

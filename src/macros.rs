@@ -2,41 +2,49 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-macro_rules! get_state {
-  ( $ctx:expr ) => {
-    $ctx.read().await
+macro_rules! expect_env {
+  ($env:literal) => {
+    std::env::var($env).expect(concat!($env, " is not present").into())
+  };
+}
+macro_rules! default_env {
+  ($env:literal, $default:literal) => {
+    std::env::var($env).unwrap_or($default.into())
   };
 }
 
-macro_rules! state_clone {
-  ($ctx:expr, $p:path) => {
-    get_state!($ctx).borrow::<$p>()?.clone()
+macro_rules! init_once {
+  ($fn:ident, $name:ident: $ty:ty, $block:block) => {
+    static $name: tokio::sync::OnceCell<$ty> = tokio::sync::OnceCell::const_new();
+
+    pub async fn $fn() -> &'static $ty {
+      $name
+      .get_or_init(|| async $block)
+      .await
+    }
+
+    macro_rules! $fn {
+      () => {
+        crate::macros::$fn().await
+      }
+    }
   };
 }
 
-macro_rules! state_clone_unwrap {
-  ($ctx:expr, $p:path) => {
-    get_state!($ctx).borrow::<$p>().unwrap().clone()
-  };
-}
+init_once!(reqwest, CLIENT: reqwest::Client, {
+  let ua = default_env!("USER_AGENT", "neko.rs");
+  reqwest::Client::builder().user_agent(ua).build().unwrap()
+});
 
-macro_rules! get_db {
-  ( $ctx:expr ) => {
-    state_clone!($ctx, sqlx::PgPool)
-  };
-}
+init_once!(db, DB: sqlx::PgPool, {
+  let pool = sqlx::postgres::PgPoolOptions::new().connect(&expect_env!("DATABASE_URL")).await.unwrap();
+  sqlx::migrate!("./sql").run(&pool).await.unwrap();
+  pool
+});
 
-macro_rules! get_db_unwrap {
-  ( $ctx:expr ) => {
-    state_clone_unwrap!($ctx, sqlx::PgPool)
-  };
-}
-
-macro_rules! get_reqwest {
-  ( $ctx:expr ) => {
-    state_clone!($ctx, reqwest::Client)
-  };
-}
+init_once!(loc, LOCALE: crate::modules::fluent::FluentBundles, {
+  crate::modules::fluent::init().unwrap()
+});
 
 macro_rules! rt_async {
     ($block:block) => {
@@ -49,21 +57,25 @@ macro_rules! build_sqlx {
   };
 }
 macro_rules! fetch_one {
-  ( $db:expr, $qb:expr, $t:tt ) => {{
+  ( $qb:expr, $t:tt ) => {{
     let (q, v) = build_sqlx!($qb);
-    sqlx::query_as_with::<_, $t, _>(&q, v).fetch_one($db).await
+    sqlx::query_as_with::<_, $t, _>(&q, v)
+      .fetch_one(db!())
+      .await
   }};
 }
 macro_rules! fetch_all {
-  ( $db:expr, $qb:expr, $t:tt ) => {{
+  ( $qb:expr, $t:tt ) => {{
     let (q, v) = build_sqlx!($qb);
-    sqlx::query_as_with::<_, $t, _>(&q, v).fetch_all($db).await
+    sqlx::query_as_with::<_, $t, _>(&q, v)
+      .fetch_all(db!())
+      .await
   }};
 }
 macro_rules! execute {
-  ( $db:expr, $qb:expr ) => {{
+  ( $qb:expr ) => {{
     let (q, v) = build_sqlx!($qb);
-    sqlx::query_with(&q, v).execute($db).await
+    sqlx::query_with(&q, v).execute(db!()).await
   }};
 }
 

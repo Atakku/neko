@@ -7,7 +7,6 @@ use crate::{
   core::*,
   modules::{
     poise::{Ctx, Poise},
-    sqlx::Postgres,
   },
   schema::{
     discord::{Guilds, Members},
@@ -27,7 +26,6 @@ async fn root() -> &'static str {
 
 impl Module for Steam {
   fn init(&mut self, fw: &mut Framework) -> R {
-    fw.req_module::<Postgres>()?;
     let axum = fw.req_module::<Axum>()?;
     axum.routes.push(|r| r.route("/", get(root)));
     let poise = fw.req_module::<Poise>()?;

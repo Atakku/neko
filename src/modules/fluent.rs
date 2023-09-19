@@ -34,31 +34,23 @@ impl Default for Fluent {
   }
 }
 
-impl Module for Fluent {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    load_resources(&mut self.resources)?;
-    fw.runtime.push(|mds, rt| {
-      let fluent = mds.take::<Self>()?;
-      Ok(Box::pin(async move {
-        let mut bundles = HashMap::new();
-        for (locale, res) in fluent.resources {
-          let mut bundle = FluentBundle::new_concurrent(vec![locale.parse()?]);
-          for r in res {
-            bundle
-              .add_resource(r)
-              .map_err(|e| format!("Failed to bundle resource for locale {locale}: {:?}", e))?;
-          }
-          bundles.insert(locale, bundle);
-        }
-        rt.write().await.put(FluentBundles {
-          bundles,
-          default: fluent.default,
-        });
-        Ok(None)
-      }))
-    });
-    Ok(())
+pub fn init() -> Res<FluentBundles> {
+  let mut fr = FluentResources::new();
+  load_resources(&mut fr)?;
+  let mut bundles = HashMap::new();
+  for (locale, res) in fr {
+    let mut bundle = FluentBundle::new_concurrent(vec![locale.parse()?]);
+    for r in res {
+      bundle
+        .add_resource(r)
+        .map_err(|e| format!("Failed to bundle resource for locale {locale}: {:?}", e))?;
+    }
+    bundles.insert(locale, bundle);
   }
+  Ok(FluentBundles {
+    bundles,
+    default: "en-US".into(),
+  })
 }
 
 fn load_resources(res: &mut FluentResources) -> R {

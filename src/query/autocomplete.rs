@@ -13,7 +13,6 @@ macro_rules! autocomplete {
   ( $fn_name:ident, $path:path) => {
     pub async fn $fn_name<'a>(ctx: Ctx<'_>, search: &'a str) -> Vec<AutocompleteChoice<String>> {
       use $path::*;
-      let db = get_db_unwrap!(ctx.data());
       let mut qb = SelectStatement::new();
       qb.from(Table);
       qb.column(Name);
@@ -29,7 +28,7 @@ macro_rules! autocomplete {
           ),
       );
       qb.limit(25);
-      fetch_all!(&db, &qb, (String, String))
+      fetch_all!(&qb, (String, String))
         .unwrap_or(vec![])
         .into_iter()
         .map(|g| AutocompleteChoice {

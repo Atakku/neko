@@ -4,10 +4,7 @@
 
 use crate::{
   core::*,
-  modules::{
-    poise::{EventHandler, Poise},
-    sqlx::Postgres,
-  },
+  modules::poise::{EventHandler, Poise},
   schema::discord::*,
 };
 use futures::StreamExt;
@@ -16,14 +13,12 @@ use poise::{
   Event,
 };
 use sea_query::{Expr, OnConflict, Query};
-use sqlx::PgPool;
 
 /// Discord scraper module, populates the database with user data (users, guilds, members)
 pub struct Discord;
 
 impl Module for Discord {
   fn init(&mut self, fw: &mut Framework) -> R {
-    fw.req_module::<Postgres>()?;
     let poise = fw.req_module::<Poise>()?;
     poise.event_handlers.push(event_handler());
     poise.intents.insert(GatewayIntents::GUILDS);
@@ -33,16 +28,15 @@ impl Module for Discord {
 }
 
 fn event_handler() -> EventHandler {
-  |c, e, _f, s| {
+  |c, event| {
     Box::pin(async move {
-      let db = get_db!(s);
       use Event::*;
-      match e {
+      match event {
         GuildCreate {
           guild: g,
           is_new: _,
         } => {
-          update_guild(&db, c, g.id).await?;
+          update_guild(c, g.id).await?;
           let res: Vec<_> = g.id.members_iter(c).collect().await;
           let members: Vec<_> = res
             .into_iter()
@@ -50,29 +44,29 @@ fn event_handler() -> EventHandler {
             .filter(|m| !m.user.bot)
             .collect();
           let users: Vec<_> = members.clone().into_iter().map(|m| m.user).collect();
-          update_users(&db, users).await?;
+          update_users(users).await?;
           // Prune members (bot may have been offline and missed guild leaves)
-          prune_members(&db, g.id).await?;
-          update_members(&db, members).await?;
+          prune_members(g.id).await?;
+          update_members(members).await?;
         }
         GuildUpdate {
           old_data_if_available: _,
           new_but_incomplete: g,
         } => {
-          update_guild(&db, &c, g.id).await?;
+          update_guild(&c, g.id).await?;
         }
         GuildDelete {
           incomplete: g,
           full: _,
         } => {
           if !g.unavailable {
-            remove_guild(&db, g.id).await?;
+            remove_guild(g.id).await?;
           }
         }
         GuildMemberAddition { new_member: m } => {
           if !m.user.bot {
-            update_users(&db, vec![m.user.clone()]).await?;
-            update_members(&db, vec![m.clone()]).await?;
+            update_users(vec![m.user.clone()]).await?;
+            update_members(vec![m.clone()]).await?;
           }
         }
         GuildMemberUpdate {
@@ -80,8 +74,8 @@ fn event_handler() -> EventHandler {
           new: m,
         } => {
           if !m.user.bot {
-            update_users(&db, vec![m.user.clone()]).await?;
-            update_members(&db, vec![m.clone()]).await?;
+            update_users(vec![m.user.clone()]).await?;
+            update_members(vec![m.clone()]).await?;
           }
         }
         GuildMemberRemoval {
@@ -90,7 +84,7 @@ fn event_handler() -> EventHandler {
           member_data_if_available: _,
         } => {
           if !u.bot {
-            remove_member(&db, *g, u.id).await?;
+            remove_member(*g, u.id).await?;
           }
         }
         _ => {}
@@ -100,7 +94,7 @@ fn event_handler() -> EventHandler {
   }
 }
 
-async fn update_guild(db: &PgPool, ctx: &Context, id: GuildId) -> R {
+async fn update_guild(ctx: &Context, id: GuildId) -> R {
   use Guilds::*;
   log::trace!("Requesting {id} information");
   let info = id.get_preview(ctx).await?;
@@ -114,23 +108,23 @@ async fn update_guild(db: &PgPool, ctx: &Context, id: GuildId) -> R {
       .to_owned(),
   );
   qb.values([info.id.0.into(), info.name.into(), info.icon.into()])?;
-  execute!(db, &qb)?;
+  execute!(&qb)?;
   Ok(())
 }
 
-async fn remove_guild(db: &PgPool, id: GuildId) -> R {
+async fn remove_guild(id: GuildId) -> R {
   use Guilds::*;
   log::trace!("Removing {id} information from db");
   let mut qb = Query::delete();
   qb.from_table(Table);
   qb.cond_where(Expr::col(Id).eq(id.0));
-  execute!(db, &qb)?;
+  execute!(&qb)?;
   Ok(())
 }
 
 const CHUNK_SIZE: usize = 10000;
 
-async fn update_users(db: &PgPool, users: Vec<User>) -> R {
+async fn update_users(users: Vec<User>) -> R {
   use Users::*;
   log::trace!("Updating {} users", users.len());
   for chunk in users.chunks(CHUNK_SIZE) {
@@ -152,22 +146,22 @@ async fn update_users(db: &PgPool, users: Vec<User>) -> R {
     }) {
       qb.values(row)?;
     }
-    execute!(db, &qb)?;
+    execute!(&qb)?;
   }
   Ok(())
 }
 
-async fn prune_members(db: &PgPool, id: GuildId) -> R {
+async fn prune_members(id: GuildId) -> R {
   use Members::*;
   log::trace!("Pruning members from {id}");
   let mut qb = Query::delete();
   qb.from_table(Table);
   qb.cond_where(Expr::col(GuildId).eq(id.0));
-  execute!(db, &qb)?;
+  execute!(&qb)?;
   Ok(())
 }
 
-async fn update_members(db: &PgPool, members: Vec<Member>) -> R {
+async fn update_members(members: Vec<Member>) -> R {
   use Members::*;
   log::trace!("Updating {} members", members.len());
   for chunk in members.chunks(CHUNK_SIZE) {
@@ -189,17 +183,17 @@ async fn update_members(db: &PgPool, members: Vec<Member>) -> R {
     }) {
       qb.values(row)?;
     }
-    execute!(db, &qb)?;
+    execute!(&qb)?;
   }
   Ok(())
 }
 
-async fn remove_member(db: &PgPool, g: GuildId, u: UserId) -> R {
+async fn remove_member(g: GuildId, u: UserId) -> R {
   use Members::*;
   let mut qb = Query::delete();
   qb.from_table(Table);
   qb.cond_where(Expr::col(GuildId).eq(g.0));
   qb.cond_where(Expr::col(UserId).eq(u.0));
-  execute!(db, &qb)?;
+  execute!(&qb)?;
   Ok(())
 }

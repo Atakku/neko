@@ -12,12 +12,11 @@ use poise::{
   BoxFuture, Command, Context, Event, FrameworkContext, FrameworkOptions,
 };
 
-pub type Fw = poise::Framework<StateLock, Err>;
-pub type FwCtx<'a> = FrameworkContext<'a, StateLock, Err>;
-pub type Ctx<'a> = Context<'a, StateLock, Err>;
-pub type Cmd = Command<StateLock, Err>;
-pub type EventHandler =
-  for<'a> fn(&'a SCtx, &'a Event<'a>, FwCtx<'a>, &'a StateLock) -> BoxFuture<'a, R>;
+pub type Fw = poise::Framework<Vec<EventHandler>, Err>;
+pub type FwCtx<'a> = FrameworkContext<'a, Vec<EventHandler>, Err>;
+pub type Ctx<'a> = Context<'a, Vec<EventHandler>, Err>;
+pub type Cmd = Command<Vec<EventHandler>, Err>;
+pub type EventHandler = for<'a> fn(&'a SCtx, &'a Event<'a>) -> BoxFuture<'a, R>;
 
 /// Poise wrapper module, to let other modules add commands and subscribe to events easily
 pub struct Poise {
@@ -40,11 +39,9 @@ impl Default for Poise {
 
 impl Module for Poise {
   fn init(&mut self, fw: &mut Framework) -> R {
-    fw.req_module::<Fluent>()?;
-    fw.runtime.push(|mds, rt| {
+    fw.runtime.push(|mds| {
       let poise = mds.take::<Self>()?;
       Ok(Box::pin(async move {
-        rt.write().await.put(poise.event_handlers);
         Ok(Some(tokio::spawn(async move {
           Fw::builder()
             .token(poise.token)
@@ -52,18 +49,19 @@ impl Module for Poise {
             .options(FrameworkOptions {
               commands: localized_commands(
                 poise.commands,
-                rt.read().await.borrow::<FluentBundles>()?,
+                loc!(),
               ),
-              event_handler: |ctx, e, fctx, rt| {
+              event_handler: |ctx, event, _fwc, ehs| {
                 Box::pin(async move {
-                  let ehs = rt.read().await.borrow::<Vec<EventHandler>>()?.clone();
-                  join_all(ehs.iter().map(|eh| (eh)(ctx, e, fctx, rt))).await;
+                  join_all(ehs.iter().map(|eh| (eh)(ctx, event))).await;
                   Ok(())
                 })
               },
               ..Default::default()
             })
-            .setup(move |_ctx, _ready, _framework| Box::pin(async move { Ok(rt) }))
+            .setup(move |_ctx, _ready, _framework| {
+              Box::pin(async move { Ok(poise.event_handlers) })
+            })
             .run()
             .await?;
           Ok(())
@@ -187,4 +185,3 @@ fn get_loc<'a>(
   }
   return None;
 }
-
