@@ -9,13 +9,23 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-async-trait = "0.1"
+askama = "0.12"
+automod = "1"
+axum = "0.6"
+chrono = "0.4"
+fluent = "0.16"
 futures = "0.3"
 futures-locks = "0.7"
+intl-memoizer = "0.5"
 log = "0.4"
-poise = { version = "0.5", git = "https://github.com/serenity-rs/poise", branch = "current" }
-pretty_env_logger = "0.4"
-sea-query = { version = "0", features = ["derive"] }
+poise = "0.5" 
+pretty_env_logger = "0.5"
+reqwest = "0.11"
+resvg = "0.35"
+rust-embed = { version = "8", features = ["compression"] }
+sea-query = "0"
 sea-query-binder = { version = "0", features = ["sqlx-postgres"] }
+serde = "1"
 sqlx = { version = "0.7", features = ["runtime-tokio", "postgres"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio-cron-scheduler = "0.9.4"

@@ -2,7 +2,7 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use super::{
+use crate::core::{
   state::{AnyData, State, SyncData},
   Res, R,
 };

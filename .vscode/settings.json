@@ -4,5 +4,8 @@
     "**/target": true,
     "**/Cargo.lock": true,
     "**/LICENSE-*": true
+  },
+  "material-icon-theme.folders.associations": {
+    "query": "database"
   }
 }

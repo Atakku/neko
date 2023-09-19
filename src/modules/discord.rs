@@ -2,8 +2,14 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use super::{poise::EventHandler, Poise, Postgres};
-use crate::{core::*, modules::sqlx::PgHelper, schema::discord::*};
+use crate::{
+  core::*,
+  modules::{
+    poise::{EventHandler, Poise},
+    sqlx::Postgres,
+  },
+  schema::discord::*,
+};
 use futures::StreamExt;
 use poise::{
   serenity_prelude::{Context, GatewayIntents, GuildId, Member, User, UserId},
@@ -16,7 +22,7 @@ use sqlx::PgPool;
 pub struct Discord;
 
 impl Module for Discord {
-  fn init(&self, fw: &mut Framework) -> R {
+  fn init(&mut self, fw: &mut Framework) -> R {
     fw.req_module::<Postgres>()?;
     let poise = fw.req_module::<Poise>()?;
     poise.event_handlers.push(event_handler());
@@ -29,9 +35,10 @@ impl Module for Discord {
 fn event_handler() -> EventHandler {
   |c, e, _f, s| {
     Box::pin(async move {
-      let db = s.read().await.borrow::<PgPool>()?.clone();
+      let db = get_db!(s);
+      use Event::*;
       match e {
-        Event::GuildCreate {
+        GuildCreate {
           guild: g,
           is_new: _,
         } => {
@@ -48,13 +55,13 @@ fn event_handler() -> EventHandler {
           prune_members(&db, g.id).await?;
           update_members(&db, members).await?;
         }
-        Event::GuildUpdate {
+        GuildUpdate {
           old_data_if_available: _,
           new_but_incomplete: g,
         } => {
           update_guild(&db, &c, g.id).await?;
         }
-        Event::GuildDelete {
+        GuildDelete {
           incomplete: g,
           full: _,
         } => {
@@ -62,13 +69,13 @@ fn event_handler() -> EventHandler {
             remove_guild(&db, g.id).await?;
           }
         }
-        Event::GuildMemberAddition { new_member: m } => {
+        GuildMemberAddition { new_member: m } => {
           if !m.user.bot {
             update_users(&db, vec![m.user.clone()]).await?;
             update_members(&db, vec![m.clone()]).await?;
           }
         }
-        Event::GuildMemberUpdate {
+        GuildMemberUpdate {
           old_if_available: _,
           new: m,
         } => {
@@ -77,7 +84,7 @@ fn event_handler() -> EventHandler {
             update_members(&db, vec![m.clone()]).await?;
           }
         }
-        Event::GuildMemberRemoval {
+        GuildMemberRemoval {
           guild_id: g,
           user: u,
           member_data_if_available: _,
@@ -94,42 +101,45 @@ fn event_handler() -> EventHandler {
 }
 
 async fn update_guild(db: &PgPool, ctx: &Context, id: GuildId) -> R {
+  use Guilds::*;
   log::trace!("Requesting {id} information");
   let info = id.get_preview(ctx).await?;
   log::trace!("Upserting {id} information into db");
   let mut qb = Query::insert();
-  qb.into_table(Guilds::Table);
-  qb.columns([Guilds::Id, Guilds::Name, Guilds::Icon]);
+  qb.into_table(Table);
+  qb.columns([Id, Name, Icon]);
   qb.on_conflict(
-    OnConflict::column(Guilds::Id)
-      .update_columns([Guilds::Name, Guilds::Icon])
+    OnConflict::column(Id)
+      .update_columns([Name, Icon])
       .to_owned(),
   );
   qb.values([info.id.0.into(), info.name.into(), info.icon.into()])?;
-  db.execute(qb).await?;
+  execute!(db, &qb)?;
   Ok(())
 }
 
 async fn remove_guild(db: &PgPool, id: GuildId) -> R {
+  use Guilds::*;
   log::trace!("Removing {id} information from db");
   let mut qb = Query::delete();
-  qb.from_table(Guilds::Table);
-  qb.cond_where(Expr::col(Guilds::Id).eq(id.0));
-  db.execute(qb).await?;
+  qb.from_table(Table);
+  qb.cond_where(Expr::col(Id).eq(id.0));
+  execute!(db, &qb)?;
   Ok(())
 }
 
 const CHUNK_SIZE: usize = 10000;
 
 async fn update_users(db: &PgPool, users: Vec<User>) -> R {
+  use Users::*;
   log::trace!("Updating {} users", users.len());
   for chunk in users.chunks(CHUNK_SIZE) {
     let mut qb = Query::insert();
-    qb.into_table(Users::Table);
-    qb.columns([Users::Id, Users::Username, Users::Nickname, Users::Avatar]);
+    qb.into_table(Table);
+    qb.columns([Id, Username, Nickname, Avatar]);
     qb.on_conflict(
-      OnConflict::column(Users::Id)
-        .update_columns([Users::Username, Users::Nickname, Users::Avatar])
+      OnConflict::column(Id)
+        .update_columns([Username, Nickname, Avatar])
         .to_owned(),
     );
     for row in chunk.into_iter().map(|u| {
@@ -142,34 +152,31 @@ async fn update_users(db: &PgPool, users: Vec<User>) -> R {
     }) {
       qb.values(row)?;
     }
-    db.execute(qb).await?;
+    execute!(db, &qb)?;
   }
   Ok(())
 }
 
 async fn prune_members(db: &PgPool, id: GuildId) -> R {
+  use Members::*;
   log::trace!("Pruning members from {id}");
   let mut qb = Query::delete();
-  qb.from_table(Members::Table);
-  qb.cond_where(Expr::col(Members::GuildId).eq(id.0));
-  db.execute(qb).await?;
+  qb.from_table(Table);
+  qb.cond_where(Expr::col(GuildId).eq(id.0));
+  execute!(db, &qb)?;
   Ok(())
 }
 
 async fn update_members(db: &PgPool, members: Vec<Member>) -> R {
+  use Members::*;
   log::trace!("Updating {} members", members.len());
   for chunk in members.chunks(CHUNK_SIZE) {
     let mut qb = Query::insert();
-    qb.into_table(Members::Table);
-    qb.columns([
-      Members::GuildId,
-      Members::UserId,
-      Members::Nickname,
-      Members::Avatar,
-    ]);
+    qb.into_table(Table);
+    qb.columns([GuildId, UserId, Nickname, Avatar]);
     qb.on_conflict(
-      OnConflict::columns([Members::GuildId, Members::UserId])
-        .update_columns([Members::Nickname, Members::Avatar])
+      OnConflict::columns([GuildId, UserId])
+        .update_columns([Nickname, Avatar])
         .to_owned(),
     );
     for row in chunk.into_iter().map(|m| {
@@ -182,16 +189,17 @@ async fn update_members(db: &PgPool, members: Vec<Member>) -> R {
     }) {
       qb.values(row)?;
     }
-    db.execute(qb).await?;
+    execute!(db, &qb)?;
   }
   Ok(())
 }
 
 async fn remove_member(db: &PgPool, g: GuildId, u: UserId) -> R {
+  use Members::*;
   let mut qb = Query::delete();
-  qb.from_table(Members::Table);
-  qb.cond_where(Expr::col(Members::GuildId).eq(g.0));
-  qb.cond_where(Expr::col(Members::UserId).eq(u.0));
-  db.execute(qb).await?;
+  qb.from_table(Table);
+  qb.cond_where(Expr::col(GuildId).eq(g.0));
+  qb.cond_where(Expr::col(UserId).eq(u.0));
+  execute!(db, &qb)?;
   Ok(())
 }

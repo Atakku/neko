@@ -2,7 +2,7 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use super::Res;
+use crate::core::Res;
 use std::{
   any::{type_name, Any, TypeId},
   collections::HashMap,

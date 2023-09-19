@@ -2,11 +2,11 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use super::{Framework, Res, R};
+use crate::core::{Framework, Res, R};
 use std::any::Any;
 
 pub trait Module: Any {
-  fn init(&self, fw: &mut Framework) -> R;
+  fn init(&mut self, fw: &mut Framework) -> R;
 }
 
 impl Framework {
@@ -15,7 +15,7 @@ impl Framework {
   }
 
   /// Load a supplied module
-  pub fn init_module<T: Module>(&mut self, module: T) -> Res<&mut Self> {
+  pub fn init_module<T: Module>(&mut self, mut module: T) -> Res<&mut Self> {
     log::info!("Initializing {}", std::any::type_name::<T>());
     module.init(self)?;
     self.modules.put(module);
