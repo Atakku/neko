@@ -6,7 +6,7 @@ use crate::core::*;
 use fluent::{bundle::FluentBundle as GenericFluentBundle, FluentArgs, FluentResource};
 use intl_memoizer::concurrent::IntlLangMemoizer;
 use rust_embed::RustEmbed;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 pub type FluentResources = HashMap<String, Vec<FluentResource>>;
 pub type FluentBundle = GenericFluentBundle<FluentResource, IntlLangMemoizer>;
@@ -16,27 +16,60 @@ pub struct FluentBundles {
   pub default: String,
 }
 
+impl Debug for FluentBundles {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("FluentBundles")
+      .field("bundles", &"<ommitted>")
+      .field("default", &self.default)
+      .finish()
+  }
+}
+
 #[derive(RustEmbed)]
 #[folder = "locale/"]
 struct Locale;
 
-pub fn init() -> Res<FluentBundles> {
-  let mut fr = FluentResources::new();
-  load_resources(&mut fr)?;
-  let mut bundles = HashMap::new();
-  for (locale, res) in fr {
-    let mut bundle = FluentBundle::new_concurrent(vec![locale.parse()?]);
-    for r in res {
-      bundle
-        .add_resource(r)
-        .map_err(|e| format!("Failed to bundle resource for locale {locale}: {:?}", e))?;
+pub struct Fluent {
+  resources: FluentResources,
+  default: String,
+}
+
+impl Default for Fluent {
+  fn default() -> Self {
+    Self {
+      resources: FluentResources::new(),
+      default: "en-US".into(),
     }
-    bundles.insert(locale, bundle);
   }
-  Ok(FluentBundles {
-    bundles,
-    default: "en-US".into(),
-  })
+}
+
+init_once!(loc, LOCALE: crate::modules::fluent::FluentBundles);
+
+impl Module for Fluent {
+  fn init(&mut self, fw: &mut Framework) -> R {
+    load_resources(&mut self.resources)?;
+    fw.runtime.push(|m| {
+      let this = m.take::<Self>()?;
+      Ok(Box::pin(async move {
+        let mut bundles = HashMap::new();
+        for (locale, res) in this.resources {
+          let mut bundle = FluentBundle::new_concurrent(vec![locale.parse()?]);
+          for r in res {
+            bundle
+              .add_resource(r)
+              .map_err(|e| format!("Failed to bundle resource for locale {locale}: {:?}", e))?;
+          }
+          bundles.insert(locale, bundle);
+        }
+        LOCALE.set(FluentBundles {
+          bundles,
+          default: this.default,
+        })?;
+        Ok(None)
+      }))
+    });
+    Ok(())
+  }
 }
 
 fn load_resources(res: &mut FluentResources) -> R {

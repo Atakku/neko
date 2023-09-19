@@ -4,7 +4,10 @@
 
 use crate::{
   core::*,
-  modules::poise::{EventHandler, Poise},
+  modules::{
+    poise::{EventHandler, Poise},
+    sqlx::Postgres,
+  },
   schema::discord::*,
 };
 use futures::StreamExt;
@@ -19,6 +22,7 @@ pub struct Discord;
 
 impl Module for Discord {
   fn init(&mut self, fw: &mut Framework) -> R {
+    fw.req_module::<Postgres>()?;
     let poise = fw.req_module::<Poise>()?;
     poise.event_handlers.push(event_handler());
     poise.intents.insert(GatewayIntents::GUILDS);

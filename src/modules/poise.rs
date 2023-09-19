@@ -4,7 +4,7 @@
 
 use crate::{
   core::*,
-  modules::fluent::{localize, FluentBundle, FluentBundles},
+  modules::fluent::{loc, localize, Fluent, FluentBundle, FluentBundles},
 };
 use futures::future::join_all;
 use poise::{
@@ -39,6 +39,7 @@ impl Default for Poise {
 
 impl Module for Poise {
   fn init(&mut self, fw: &mut Framework) -> R {
+    fw.req_module::<Fluent>()?;
     fw.runtime.push(|mds| {
       let poise = mds.take::<Self>()?;
       Ok(Box::pin(async move {
@@ -47,10 +48,7 @@ impl Module for Poise {
             .token(poise.token)
             .intents(poise.intents)
             .options(FrameworkOptions {
-              commands: localized_commands(
-                poise.commands,
-                loc!(),
-              ),
+              commands: localized_commands(poise.commands, loc()),
               event_handler: |ctx, event, _fwc, ehs| {
                 Box::pin(async move {
                   join_all(ehs.iter().map(|eh| (eh)(ctx, event))).await;
