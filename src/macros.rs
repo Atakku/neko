@@ -2,6 +2,8 @@
 //
 // This project is dual licensed under MIT and Apache.
 
+#![allow(unused_macros)]
+
 macro_rules! expect_env {
   ($env:literal) => {
     std::env::var($env).expect(concat!($env, " is not present").into())

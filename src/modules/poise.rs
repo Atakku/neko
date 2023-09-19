@@ -4,7 +4,7 @@
 
 use crate::{
   core::*,
-  modules::fluent::{localize, Fluent, FluentBundle, FluentBundles},
+  modules::fluent::{localize, FluentBundle, FluentBundles},
 };
 use futures::future::join_all;
 use poise::{

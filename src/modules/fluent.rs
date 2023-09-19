@@ -20,20 +20,6 @@ pub struct FluentBundles {
 #[folder = "locale/"]
 struct Locale;
 
-pub struct Fluent {
-  resources: FluentResources,
-  default: String,
-}
-
-impl Default for Fluent {
-  fn default() -> Self {
-    Self {
-      resources: FluentResources::new(),
-      default: "en-US".into(),
-    }
-  }
-}
-
 pub fn init() -> Res<FluentBundles> {
   let mut fr = FluentResources::new();
   load_resources(&mut fr)?;

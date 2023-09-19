@@ -11,7 +11,7 @@ use sea_query::{Alias, Expr, Func, SelectStatement};
 
 macro_rules! autocomplete {
   ( $fn_name:ident, $path:path) => {
-    pub async fn $fn_name<'a>(ctx: Ctx<'_>, search: &'a str) -> Vec<AutocompleteChoice<String>> {
+    pub async fn $fn_name<'a>(_: Ctx<'_>, search: &'a str) -> Vec<AutocompleteChoice<String>> {
       use $path::*;
       let mut qb = SelectStatement::new();
       qb.from(Table);

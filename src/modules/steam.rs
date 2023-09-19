@@ -5,9 +5,7 @@
 use super::{cron::Cron, axum::Axum};
 use crate::{
   core::*,
-  modules::{
-    poise::{Ctx, Poise},
-  },
+  modules::poise::{Ctx, Poise},
   schema::{
     discord::{Guilds, Members},
     steam::*,
@@ -41,7 +39,7 @@ impl Module for Steam {
 }
 
 #[poise::command(prefix_command, slash_command, subcommand_required, subcommands("top"))]
-pub async fn steam(ctx: Ctx<'_>) -> R {
+pub async fn steam(_: Ctx<'_>) -> R {
   Ok(())
 }
 
