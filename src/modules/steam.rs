@@ -2,22 +2,31 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use super::{cron::Cron, axum::Axum};
+use super::{axum::Axum, cron::Cron};
 use crate::{
   core::*,
-  modules::poise::{Ctx, Poise},
-  modules::sqlx::Postgres,
+  interface::steam::{IPlayerService, ISteamApps},
+  modules::{
+    poise::{Ctx, Poise},
+    reqwest::req,
+    sqlx::Postgres,
+  },
   schema::{
     discord::{Guilds, Members},
     steam::*,
-  },
+  }, query::{steam::{update_apps, update_users, update_playdata}, neko::all_steam_connections}
 };
 use axum::routing::get;
-use poise::{serenity_prelude::UserId, ChoiceParameter};
-use sea_query::{Alias, Expr, Func, Order, Query, WindowStatement};
+use poise::{
+  serenity_prelude::UserId,
+  ChoiceParameter,
+};
+use sea_query::{Alias, Expr, Func, OnConflict, Order, Query, WindowStatement};
 use tokio_cron_scheduler::Job;
 
 pub struct Steam;
+
+once_cell!(sapi_key, APIKEY: String);
 
 async fn root() -> &'static str {
   "Hello from steam module!"
@@ -25,6 +34,7 @@ async fn root() -> &'static str {
 
 impl Module for Steam {
   fn init(&mut self, fw: &mut Framework) -> R {
+    APIKEY.set(expect_env!("STEAMAPI_KEY"))?;
     fw.req_module::<Postgres>()?;
     let axum = fw.req_module::<Axum>()?;
     axum.routes.push(|r| r.route("/", get(root)));
@@ -33,7 +43,14 @@ impl Module for Steam {
     let cron = fw.req_module::<Cron>()?;
     cron.jobs.push(Job::new_async("0 0 */6 * * *", |_id, _jsl| {
       Box::pin(async move {
-        
+        let conns = all_steam_connections().await.unwrap();
+        update_users(&conns).await.unwrap();
+        update_playdata(&conns).await.unwrap();
+      })
+    })?);
+    cron.jobs.push(Job::new_async("0 0 0 */7 * *", |_id, _jsl| {
+      Box::pin(async move {
+        update_apps().await.unwrap()
       })
     })?);
     Ok(())

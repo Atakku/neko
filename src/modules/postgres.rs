@@ -19,7 +19,7 @@ impl Default for Postgres {
   }
 }
 
-init_once!(db, POOL: sqlx::PgPool);
+once_cell!(db, POOL: sqlx::PgPool);
 
 impl Module for Postgres {
   fn init(&mut self, fw: &mut Framework) -> R {

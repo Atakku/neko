@@ -31,7 +31,7 @@ impl Default for Poise {
     Self {
       token: expect_env!("DISCORD_TOKEN"),
       intents: GatewayIntents::GUILD_MESSAGES, // Required for text commands
-      commands: vec![register_commands()],     // Used to update slash commands
+      commands: vec![],
       event_handlers: vec![],
     }
   }
@@ -68,13 +68,6 @@ impl Module for Poise {
     });
     Ok(())
   }
-}
-
-/// Registers or unregisters application commands in this guild or globally
-#[poise::command(prefix_command, hide_in_help, owners_only)]
-async fn register_commands(ctx: Ctx<'_>) -> R {
-  poise::samples::register_application_commands_buttons(ctx).await?;
-  Ok(())
 }
 
 const LOCALES: [&str; 31] = [

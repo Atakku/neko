@@ -5,10 +5,10 @@ CREATE TABLE neko_users (
 
 CREATE TABLE neko_connections_discord (
   id INTEGER PRIMARY KEY,
-  discord_id BIGINT UNIQUE NOT NULL REFERENCES discord_users(id) ON DELETE CASCADE ON UPDATE CASCADE
+  discord_id BIGINT UNIQUE NOT NULL
 );
 
 CREATE TABLE neko_connections_steam (
   id INTEGER PRIMARY KEY,
-  steam_id BIGINT UNIQUE NOT NULL REFERENCES steam_users(id) ON DELETE CASCADE ON UPDATE CASCADE
+  steam_id BIGINT UNIQUE NOT NULL
 );

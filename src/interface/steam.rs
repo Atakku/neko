@@ -10,7 +10,12 @@ api!(ISteamApps, "https://api.steampowered.com/ISteamApps/", {
 
 #[derive(Deserialize)]
 pub struct GetAppList {
-  pub applist: Vec<App>,
+  pub applist: Applist,
+}
+
+#[derive(Deserialize)]
+pub struct Applist {
+  pub apps: Vec<App>,
 }
 
 #[derive(Deserialize)]
@@ -20,9 +25,34 @@ pub struct App {
   pub name: String,
 }
 
+api!(ISteamUser, "https://api.steampowered.com/ISteamUser/", {
+  fn get_player_summaries("GetPlayerSummaries/v2") -> Response<GetPlayerSummaries> {
+    key: &String,
+    steamids: &String,
+  };
+});
+
+#[derive(Deserialize)]
+pub struct Response<T> {
+  pub response: T,
+}
+
+#[derive(Deserialize)]
+pub struct GetPlayerSummaries {
+  pub players: Vec<PlayerSummary>
+}
+
+#[derive(Deserialize)]
+pub struct PlayerSummary {
+  #[serde(rename = "steamid")]
+  pub id: String,
+  #[serde(rename = "personaname")]
+  pub name: String,
+}
+
 api!(IPlayerService, "https://api.steampowered.com/IPlayerService/", {
   fn get_owned_games("GetOwnedGames/v1") -> Response<GetRecentlyPlayedGames> {
-    key: String,
+    key: &String,
     steamid: u64,
     include_appinfo: bool,
     include_played_free_games: bool,
@@ -34,11 +64,6 @@ api!(IPlayerService, "https://api.steampowered.com/IPlayerService/", {
 });
 
 #[derive(Deserialize)]
-pub struct Response<T> {
-  pub response: T,
-}
-
-#[derive(Deserialize)]
 pub struct GetRecentlyPlayedGames {
   pub games: Vec<OwnedApp>,
 }
@@ -47,6 +72,7 @@ pub struct GetRecentlyPlayedGames {
 pub struct OwnedApp {
   #[serde(rename = "appid")]
   pub id: u32,
+  pub name: String,
   #[serde(rename = "playtime_forever")]
   pub playtime: u32,
 }

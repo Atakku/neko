@@ -18,7 +18,7 @@ impl Default for Reqwest {
   }
 }
 
-init_once!(reqwest, CLIENT: reqwest::Client);
+once_cell!(req, CLIENT: reqwest::Client);
 
 impl Module for Reqwest {
   fn init(&mut self, fw: &mut Framework) -> R {

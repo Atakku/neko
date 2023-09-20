@@ -43,7 +43,7 @@ impl Default for Fluent {
   }
 }
 
-init_once!(loc, LOCALE: crate::modules::fluent::FluentBundles);
+once_cell!(loc, LOCALE: crate::modules::fluent::FluentBundles);
 
 impl Module for Fluent {
   fn init(&mut self, fw: &mut Framework) -> R {

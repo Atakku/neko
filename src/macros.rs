@@ -15,12 +15,14 @@ macro_rules! default_env {
   };
 }
 
-macro_rules! init_once {
+macro_rules! once_cell {
   ($fun:ident, $name:ident: $ty:ty) => {
     static $name: tokio::sync::OnceCell<$ty> = tokio::sync::OnceCell::const_new();
 
     pub fn $fun() -> &'static $ty {
-      $name.get().expect(concat!(stringify!($fun), " has not yet been initialized"))
+      $name
+        .get()
+        .expect(concat!(stringify!($fun), " has not yet been initialized"))
     }
   };
 }
@@ -36,17 +38,17 @@ macro_rules! build_sqlx {
   };
 }
 macro_rules! fetch_one {
-  ( $qb:expr, $t:tt ) => {{
+  ( $qb:expr, $t:ty ) => {{
     let (q, v) = build_sqlx!($qb);
-    sqlx::query_as_with::<_, $t, _>(&q, v)
+    sqlx::query_as_with::<_, $ty, _>(&q, v)
       .fetch_one(crate::modules::sqlx::db())
       .await
   }};
 }
 macro_rules! fetch_all {
-  ( $qb:expr, $t:tt ) => {{
+  ( $qb:expr, $ty:ty ) => {{
     let (q, v) = build_sqlx!($qb);
-    sqlx::query_as_with::<_, $t, _>(&q, v)
+    sqlx::query_as_with::<_, $ty, _>(&q, v)
       .fetch_all(crate::modules::sqlx::db())
       .await
   }};
@@ -54,7 +56,9 @@ macro_rules! fetch_all {
 macro_rules! execute {
   ( $qb:expr ) => {{
     let (q, v) = build_sqlx!($qb);
-    sqlx::query_with(&q, v).execute(crate::modules::sqlx::db()).await
+    sqlx::query_with(&q, v)
+      .execute(crate::modules::sqlx::db())
+      .await
   }};
 }
 
@@ -72,7 +76,11 @@ macro_rules! api {
 
     impl $name for reqwest::Client {
       $(async fn $fun(&self, $($($pn: $pt),*)?) -> crate::core::Res<$ty> {
-        Ok(self.get(format!(concat!($base, $endpoint, $("?",$(stringify!($pn), "={", stringify!($pn), "}&"),*)?), $($($pn=$pn),*)?)).send().await?.json::<$ty>().await?)
+        let req = format!(concat!($base, $endpoint, $("?",$(stringify!($pn), "={", stringify!($pn), "}&"),*)?), $($($pn=$pn),*)?);
+        log::trace!("Sending req to {req}");
+        let res = self.get(req).send().await?;
+        log::trace!("Received status: {}", res.status());
+        Ok(res.json::<$ty>().await?)
       })*
     }
   };
