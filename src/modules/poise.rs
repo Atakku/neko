@@ -29,7 +29,7 @@ pub struct Poise {
 impl Default for Poise {
   fn default() -> Self {
     Self {
-      token: std::env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN is not present"),
+      token: expect_env!("DISCORD_TOKEN"),
       intents: GatewayIntents::GUILD_MESSAGES, // Required for text commands
       commands: vec![register_commands()],     // Used to update slash commands
       event_handlers: vec![],

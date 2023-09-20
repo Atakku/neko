@@ -13,7 +13,7 @@ pub struct Reqwest {
 impl Default for Reqwest {
   fn default() -> Self {
     Self {
-      user_agent: std::env::var("USER_AGENT").unwrap_or("neko.bot".into()),
+      user_agent: default_env!("USER_AGENT", "neko.rs"),
     }
   }
 }
