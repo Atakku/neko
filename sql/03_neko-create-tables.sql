@@ -3,12 +3,26 @@ CREATE TABLE neko_users (
   slug VARCHAR(32) UNIQUE
 );
 
-CREATE TABLE neko_connections_discord (
-  id INTEGER PRIMARY KEY,
-  discord_id BIGINT UNIQUE NOT NULL
+CREATE TABLE neko_users_discord (
+  neko_id INTEGER NOT NULL REFERENCES neko_users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  discord_id BIGINT PRIMARY KEY
 );
 
-CREATE TABLE neko_connections_steam (
-  id INTEGER PRIMARY KEY,
-  steam_id BIGINT UNIQUE NOT NULL
+CREATE TABLE neko_users_steam (
+  neko_id INTEGER NOT NULL REFERENCES neko_users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  steam_id BIGINT PRIMARY KEY
+);
+
+CREATE TABLE neko_users_anilist (
+  neko_id INTEGER NOT NULL REFERENCES neko_users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  anilist_id BIGINT PRIMARY KEY
+);
+
+CREATE TABLE neko_users_telegram (
+  neko_id INTEGER NOT NULL REFERENCES neko_users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  telegram_id BIGINT PRIMARY KEY
+);
+
+CREATE TABLE neko_whitelist_discord (
+  guild_id BIGINT PRIMARY KEY
 );

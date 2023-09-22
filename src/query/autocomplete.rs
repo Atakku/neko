@@ -7,7 +7,7 @@ use crate::{
   schema::*
 };
 use poise::AutocompleteChoice;
-use sea_query::{Alias, Expr, Func, SelectStatement};
+use sea_query::{Alias, Expr, Func, SelectStatement, Order};
 
 macro_rules! autocomplete {
   ( $fn_name:ident, $path:path) => {
@@ -15,9 +15,7 @@ macro_rules! autocomplete {
       use $path::*;
       let mut qb = SelectStatement::new();
       qb.from(Table);
-      qb.column(Name);
-      qb.expr(Expr::col(Id)
-      .cast_as(Alias::new("TEXT")));
+      qb.columns([Id, Name]);
       qb.and_where(
         Expr::expr(Func::lower(Expr::col(Name)))
           .like(format!("%{}%", search.to_lowercase()))
@@ -27,13 +25,15 @@ macro_rules! autocomplete {
               .like(format!("%{search}%")),
           ),
       );
+      qb.order_by(Name, Order::Asc);
       qb.limit(25);
-      fetch_all!(&qb, (String, String))
+      use unicode_truncate::UnicodeTruncateStr;
+      fetch_all!(&qb, (i64, String))
         .unwrap_or(vec![])
         .into_iter()
         .map(|g| AutocompleteChoice {
-          name: g.0,
-          value: g.1,
+          value: g.0.to_string(),
+          name: g.1.unicode_truncate(100).0.into(),
         })
         .collect()
     }

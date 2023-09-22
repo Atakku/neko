@@ -40,3 +40,14 @@ pub enum PlaydataHistory {
   UtcDay,
   Playtime,
 }
+
+
+#[derive(Iden)]
+#[iden(rename = "steam_discord_roles")]
+pub enum DiscordRoles {
+  Table,
+  GuildId,
+  RoleId,
+  AppId,
+}
+

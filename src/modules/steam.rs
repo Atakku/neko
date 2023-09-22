@@ -2,26 +2,25 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use super::{axum::Axum, cron::Cron};
+use super::{axum::Axum, cron::Cron, poise::EventHandler};
 use crate::{
   core::*,
-  interface::steam::{IPlayerService, ISteamApps},
   modules::{
     poise::{Ctx, Poise},
-    reqwest::req,
     sqlx::Postgres,
   },
-  schema::{
-    discord::{Guilds, Members},
-    steam::*,
-  }, query::{steam::{update_apps, update_users, update_playdata}, neko::all_steam_connections}
+  query::{
+    autocomplete::*,
+    neko::all_steam_connections,
+    steam::{build_top_query, update_apps, update_playdata, update_users, At, By, Of, QueryOutput},
+  },
 };
 use axum::routing::get;
 use poise::{
-  serenity_prelude::UserId,
-  ChoiceParameter,
+  serenity_prelude::{Member, Role, RoleId, UserId},
+  BoxFuture, Event,
 };
-use sea_query::{Alias, Expr, Func, OnConflict, Order, Query, WindowStatement};
+use sea_query::{Expr, Query};
 use tokio_cron_scheduler::Job;
 
 pub struct Steam;
@@ -40,140 +39,128 @@ impl Module for Steam {
     axum.routes.push(|r| r.route("/", get(root)));
     let poise = fw.req_module::<Poise>()?;
     poise.commands.push(steam());
+    poise.event_handlers.push(roles());
     let cron = fw.req_module::<Cron>()?;
     cron.jobs.push(Job::new_async("0 0 */6 * * *", |_id, _jsl| {
       Box::pin(async move {
-        let conns = all_steam_connections().await.unwrap();
-        update_users(&conns).await.unwrap();
-        update_playdata(&conns).await.unwrap();
+        minor_update().await.unwrap();
       })
     })?);
     cron.jobs.push(Job::new_async("0 0 0 */7 * *", |_id, _jsl| {
       Box::pin(async move {
-        update_apps().await.unwrap()
+        //update_apps().await.unwrap()
       })
     })?);
     Ok(())
   }
 }
 
-#[poise::command(prefix_command, slash_command, subcommand_required, subcommands("top"))]
-pub async fn steam(_: Ctx<'_>) -> R {
-  Ok(())
-}
-
-#[poise::command(prefix_command, slash_command, subcommands("user", "app", "guild"))]
-pub async fn top(ctx: Ctx<'_>, by: By) -> R {
-  ctx.reply(format!("Global top: {by}")).await?;
-  Ok(())
-}
-
-#[poise::command(prefix_command, slash_command)]
-pub async fn user(ctx: Ctx<'_>, by: By, user: UserId) -> R {
-  ctx.reply(format!("Top in user: {user} {by}")).await?;
-  Ok(())
-}
-
-#[poise::command(prefix_command, slash_command)]
-pub async fn app(
-  ctx: Ctx<'_>,
-  by: By,
-  #[autocomplete = "crate::query::autocomplete::steam_apps"] app: i32,
-) -> R {
-  ctx.reply(format!("Top in app: {app} {by}")).await?;
-  Ok(())
-}
-
-#[poise::command(prefix_command, slash_command)]
-pub async fn guild(
-  ctx: Ctx<'_>,
-  by: By,
-  #[autocomplete = "crate::query::autocomplete::discord_guilds"] guild: String,
-) -> R {
-  ctx.reply(format!("Top in guild: {guild} {by}")).await?;
-  Ok(())
-}
-
-#[derive(ChoiceParameter)]
-pub enum By {
-  Playtime,
-  Ownership, // TODO: TopCompleteon (achievemetns)
-}
-
-pub enum Target {
-  User(i64),
-  Guild(i64),
-  App(i32),
-  Global,
-}
-
-pub enum Mode {
-  Apps,   // Top apps in user, guild, or global, by hours or count
-  Guilds, // Top guilds by app hours or app count, in app or global
-  Users,  // Top users by app hours or app count, in guild or global
-}
-
-pub struct Top {
-  mode: Mode,
-  by: By,
-  target: Target,
-}
-
-pub fn query_builder(top: Top) {
-  let mut qb = Query::select();
-  qb.from(Playdata::Table);
-  qb.expr_as(
-    Func::count(Expr::col((
-      Playdata::Table,
-      match top.by {
-        By::Playtime => Playdata::Playtime,
-        By::Ownership => Playdata::AppId,
-      },
-    ))),
-    Alias::new("sum_count"),
-  );
-  qb.expr_window_as(
-    Func::cust(Alias::new("ROW_NUMBER")),
-    WindowStatement::new()
-      .order_by_expr(
-        Expr::sum(Expr::col((
-          Playdata::Table,
-          match top.by {
-            By::Playtime => Playdata::Playtime,
-            By::Ownership => Playdata::AppId,
-          },
-        ))),
-        Order::Desc,
-      )
-      .to_owned(),
-    Alias::new("row_num"),
-  );
-  qb.order_by(Alias::new("sum_count"), Order::Desc);
-  match top.mode {
-    Mode::Apps => {
-      qb.from(Apps::Table);
-      qb.columns([(Apps::Table, Apps::Id), (Apps::Table, Apps::Name)]);
-    }
-    Mode::Guilds => {
-      qb.from(Guilds::Table);
-      qb.columns([(Guilds::Table, Guilds::Id), (Guilds::Table, Guilds::Name)]);
-    }
-    Mode::Users => {
-      // TODO: members context
-      qb.from(Users::Table);
-      qb.columns([(Users::Table, Users::Id), (Users::Table, Users::Name)]);
-    }
+fn roles() -> EventHandler {
+  |c, event| {
+    Box::pin(async move {
+      use Event::*;
+      match event {
+        GuildMemberAddition { new_member: m } => {
+          if !m.user.bot {
+            let roles = filter_roles(
+              m.roles(c).unwrap_or_default(),
+              get_roles(m).await?,
+            );
+            let mut member = m.guild_id.member(c, m.user.id).await?;
+            member.add_roles(c, roles.as_slice()).await?;
+          }
+        }
+        _ => {}
+      }
+      Ok(())
+    })
   }
-  match top.target {
-    Target::User(id) => {
-      qb.and_where(Expr::col((Members::Table, Members::UserId)).eq(id));
-    }
-    Target::Guild(id) => {
-      qb.and_where(Expr::col((Members::Table, Members::GuildId)).eq(id));
-    }
-    Target::App(id) => {
-      qb.and_where(Expr::col((Apps::Table, Apps::Id)).eq(id));
-    }
-    Target::Global => {}
+}
+
+pub async fn get_roles( m: &Member) -> Res<Vec<RoleId>> {
+  use crate::schema::*;
+  let mut qb = Query::select();
+  qb.from(steam::DiscordRoles::Table);
+  qb.from(steam::Playdata::Table);
+  qb.from(neko::UsersSteam::Table);
+  qb.from(neko::UsersDiscord::Table);
+  qb.column((steam::DiscordRoles::Table, steam::DiscordRoles::RoleId));
+  qb.cond_where(Expr::col((steam::DiscordRoles::Table, steam::DiscordRoles::GuildId)).eq(m.guild_id.0 as i64));
+  qb.cond_where(Expr::col((steam::DiscordRoles::Table, steam::DiscordRoles::AppId)).equals((steam::Playdata::Table, steam::Playdata::AppId)));
+  qb.cond_where(Expr::col((neko::UsersSteam::Table, neko::UsersSteam::SteamId)).equals((steam::Playdata::Table, steam::Playdata::UserId)));
+  qb.cond_where(Expr::col((neko::UsersSteam::Table, neko::UsersSteam::NekoId)).equals((neko::UsersDiscord::Table, neko::UsersDiscord::NekoId)));
+  qb.cond_where(Expr::col((neko::UsersDiscord::Table, neko::UsersDiscord::DiscordId)).eq(m.user.id.0 as i64));
+  qb.distinct();
+  Ok(fetch_all!(&qb, (i64,))?.into_iter()
+  .map(|r| RoleId(r.0 as u64))
+  .collect())
+}
+
+pub fn filter_roles(og: Vec<Role>, add: Vec<RoleId>) -> Vec<RoleId> {
+  let mapped: Vec<u64> = og.into_iter().map(|r| r.id.0).collect();
+  add.into_iter().filter(|r| !mapped.contains(&r.0)).collect()
+}
+
+pub async fn minor_update() -> R {
+  let c = all_steam_connections().await?;
+  update_users(&c).await?;
+  update_playdata(&c).await?;
+  Ok(())
+}
+
+cmd_group!(steam, "user_top", "app_top", "guild_top", "top");
+
+#[poise::command(prefix_command, slash_command)]
+pub async fn top(ctx: Ctx<'_>, of: Of, by: By) -> R {
+  let output = format!("Top of {of} by {by}");
+  let m = ctx.reply(output.clone()).await?;
+  let c = fetch(output, of, by, At::None).await?;
+  m.edit(ctx, |m| m.content(c)).await?;
+  Ok(())
+}
+
+#[poise::command(prefix_command, slash_command)]
+pub async fn user_top(ctx: Ctx<'_>, of: Of, by: By, user: UserId) -> R {
+  let output = format!("Users's ({user}) top of {of} by {by}");
+  let m = ctx.reply(output.clone()).await?;
+  let c = fetch(output, of, by, At::User(user.0 as i64)).await?;
+  m.edit(ctx, |m| m.content(c)).await?;
+  Ok(())
+}
+
+#[poise::command(prefix_command, slash_command)]
+pub async fn app_top(ctx: Ctx<'_>, of: Of, by: By, #[autocomplete = "steam_apps"] app: i32) -> R {
+  let output = format!("Apps's ({app}) top of {of} by {by}");
+  let m = ctx.reply(output.clone()).await?;
+  let c = fetch(output, of, by, At::App(app)).await?;
+  m.edit(ctx, |m| m.content(c)).await?;
+  Ok(())
+}
+
+#[poise::command(prefix_command, slash_command)]
+pub async fn guild_top(
+  ctx: Ctx<'_>,
+  of: Of,
+  by: By,
+  #[autocomplete = "discord_guilds"] guild: String,
+) -> R {
+  let output = format!("Guild's ({guild}) top of {of} by {by}");
+  let m = ctx.reply(output.clone()).await?;
+  let c = fetch(output, of, by, At::Guild(guild.parse::<i64>()?)).await?;
+  m.edit(ctx, |m| m.content(c)).await?;
+  Ok(())
+}
+
+async fn fetch(input: String, of: Of, by: By, at: At) -> Res<String> {
+  let mut output = String::new();
+  let bys = match by {
+    By::Playtime => "hours",
+    By::Ownership => "copies",
   };
+  let divider = if let By::Playtime = by { 60 } else { 1 };
+  let data = fetch_all!(&build_top_query(of, by, at), QueryOutput)?;
+  for d in data.into_iter().take(10) {
+    output += &format!("{} | {} | {}\n", d.row_num, d.sum_count / divider, d.name);
+  }
+  Ok(format!("{input}\n```\n# | {bys} | name \n{output}```"))
 }

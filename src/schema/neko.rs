@@ -13,17 +13,40 @@ pub enum Users {
 }
 
 #[derive(Iden)]
-#[iden(rename = "neko_connections_discord")]
-pub enum Discord {
+#[iden(rename = "neko_users_discord")]
+pub enum UsersDiscord {
   Table,
-  Id,
+  NekoId,
   DiscordId,
 }
 
 #[derive(Iden)]
-#[iden(rename = "neko_connections_steam")]
-pub enum Steam {
+#[iden(rename = "neko_users_steam")]
+pub enum UsersSteam {
   Table,
-  Id,
+  NekoId,
   SteamId,
+}
+
+#[derive(Iden)]
+#[iden(rename = "neko_users_anilist")]
+pub enum UsersAnilist {
+  Table,
+  NekoId,
+  AnilistId,
+}
+
+#[derive(Iden)]
+#[iden(rename = "neko_users_telegram")]
+pub enum UsersTelegram {
+  Table,
+  NekoId,
+  TelegramId,
+}
+
+#[derive(Iden)]
+#[iden(rename = "neko_whitelist_discord")]
+pub enum WhitelistDiscord {
+  Table,
+  GuildId,
 }

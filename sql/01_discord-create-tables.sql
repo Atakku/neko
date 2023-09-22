@@ -6,15 +6,15 @@ CREATE TABLE discord_guilds (
 
 CREATE TABLE discord_users (
   id BIGINT PRIMARY KEY,
-  username VARCHAR(32) NOT NULL,
-  nickname VARCHAR(32),
+  name VARCHAR(32) NOT NULL,
+  nick VARCHAR(32),
   avatar VARCHAR(34)
 );
 
 CREATE TABLE discord_members (
   guild_id BIGINT NOT NULL REFERENCES discord_guilds(id) ON DELETE CASCADE ON UPDATE CASCADE,
   user_id BIGINT NOT NULL REFERENCES discord_users(id) ON DELETE CASCADE ON UPDATE CASCADE,
-  nickname VARCHAR(32),
+  nick VARCHAR(32),
   avatar VARCHAR(34),
   PRIMARY KEY (guild_id, user_id)
 );

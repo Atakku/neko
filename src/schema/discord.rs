@@ -18,8 +18,8 @@ pub enum Guilds {
 pub enum Users {
   Table,
   Id,
-  Username,
-  Nickname,
+  Name,
+  Nick,
   Avatar,
 }
 
@@ -29,6 +29,6 @@ pub enum Members {
   Table,
   GuildId,
   UserId,
-  Nickname,
+  Nick,
   Avatar,
 }

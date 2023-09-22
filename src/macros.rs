@@ -37,8 +37,17 @@ macro_rules! build_sqlx {
     sea_query_binder::SqlxBinder::build_sqlx($qb, sea_query::PostgresQueryBuilder)
   };
 }
+
+macro_rules! fetch_optional {
+  ( $qb:expr, $ty:ty ) => {{
+    let (q, v) = build_sqlx!($qb);
+    sqlx::query_as_with::<_, $ty, _>(&q, v)
+      .fetch_optional(crate::modules::sqlx::db())
+      .await
+  }};
+}
 macro_rules! fetch_one {
-  ( $qb:expr, $t:ty ) => {{
+  ( $qb:expr, $ty:ty ) => {{
     let (q, v) = build_sqlx!($qb);
     sqlx::query_as_with::<_, $ty, _>(&q, v)
       .fetch_one(crate::modules::sqlx::db())
@@ -83,5 +92,21 @@ macro_rules! api {
         Ok(res.json::<$ty>().await?)
       })*
     }
+  };
+}
+
+macro_rules! not_match {
+  ( $v:expr, $pat:pat, $block:block ) => {
+    match $v {
+      $pat => {}
+      _ => $block,
+    }
+  };
+}
+
+macro_rules! cmd_group {
+  ($cmd:ident, $($sub:literal),*) => {
+    #[poise::command(prefix_command, slash_command, subcommand_required, subcommands($($sub),*))]
+    pub async fn $cmd(_: crate::modules::poise::Ctx<'_>) -> crate::core::R {Ok(())}
   };
 }
