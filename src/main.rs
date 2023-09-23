@@ -17,6 +17,7 @@ async fn main() -> R {
   fw.init_module(steam::Steam)?;
   fw.init_module(anilist::AniList)?;
   fw.init_module(drg::DeepRockGalactic)?;
+  fw.init_module(gwaaa::Gwaaa {})?;
   fw.run().await?;
   Ok(())
 }

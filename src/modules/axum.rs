@@ -4,10 +4,11 @@
 
 use crate::core::*;
 use axum::{Router, Server};
+use futures::future::BoxFuture;
 use std::net::Ipv4Addr;
 
 pub struct Axum {
-  pub routes: Vec<fn(Router) -> Router>,
+  pub routes: Vec<fn(Router) -> BoxFuture<'static, Res<Router>>>,
   pub port: u16,
 }
 
@@ -25,11 +26,11 @@ impl Module for Axum {
     fw.runtime.push(|m| {
       let axum = m.take::<Self>()?;
       Ok(Box::pin(async move {
+        let mut router = Router::new();
+        for route in axum.routes {
+          router = route(router).await?;
+        }
         Ok(Some(tokio::spawn(async move {
-          let mut router = Router::new();
-          for route in axum.routes {
-            router = route(router);
-          }
           Server::bind(&(Ipv4Addr::UNSPECIFIED, axum.port).into())
             .serve(router.into_make_service())
             .await?;

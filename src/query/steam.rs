@@ -169,34 +169,34 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
   member_eq(&mut qb, &of, &at);
   match of {
     Of::Apps => {
-      use steam::{Apps::*, Playdata};
-      qb.from(Table);
-      qb.and_where(Expr::col((Table, Id)).equals((Playdata::Table, Playdata::AppId)));
-      qb.group_by_col((Table, Id));
-      qb.columns([(Table, Id), (Table, Name)]);
+      use steam::{Apps, Playdata};
+      qb.from(Apps::Table);
+      qb.and_where(ex_col!(Apps, Id).equals(col!(Playdata, AppId)));
+      qb.group_by_col(col!(Apps, Id));
+      qb.columns([col!(Apps, Id), col!(Apps, Name)]);
     }
     Of::Guilds => {
-      use discord::{Guilds::*, *};
-      qb.from(Table);
-      qb.and_where(Expr::col((Table, Id)).equals((Members::Table, Members::GuildId)));
-      qb.group_by_col((Table, Id));
-      qb.columns([(Table, Id), (Table, Name)]);
+      use discord::{Guilds, Members};
+      qb.from(Guilds::Table);
+      qb.and_where(ex_col!(Guilds, Id).equals(col!(Members, GuildId)));
+      qb.group_by_col(col!(Guilds, Id));
+      qb.columns([col!(Guilds, Id), col!(Guilds, Name)]);
     }
     Of::Users => {
-      use discord::Users::*;
+      use discord::Users;
       use neko::UsersDiscord;
-      qb.from(Table);
-      qb.and_where(Expr::col((Table, Id)).equals((UsersDiscord::Table, UsersDiscord::DiscordId)));
-      qb.group_by_col((Table, Id));
-      qb.columns([(Table, Id), (Table, Name)]);
+      qb.from(Users::Table);
+      qb.and_where(ex_col!(Users, Id).equals(col!(UsersDiscord, DiscordId)));
+      qb.group_by_col(col!(Users, Id));
+      qb.columns([col!(Users, Id), col!(Users, Name)]);
     }
   }
   {
-    use steam::Playdata::*;
+    use steam::Playdata;
     qb.expr_as(
       match by {
-        By::Playtime => Func::sum(Expr::col((Table, Playtime))),
-        By::Ownership => Func::count(Expr::col((Table, AppId))),
+        By::Playtime => Func::sum(ex_col!(Playdata, Playtime)),
+        By::Ownership => Func::count(ex_col!(Playdata, AppId)),
       },
       Alias::new("sum_count"),
     );
@@ -205,8 +205,8 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
       WindowStatement::new()
         .order_by_expr(
           match by {
-            By::Playtime => Expr::sum(Expr::col((Table, Playtime))),
-            By::Ownership => Expr::count(Expr::col((Table, AppId))),
+            By::Playtime => Expr::sum(ex_col!(Playdata, Playtime)),
+            By::Ownership => Expr::count(ex_col!(Playdata, AppId)),
           },
           Order::Desc,
         )
@@ -215,20 +215,11 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
     );
   }
   match at {
-    At::User(id) => {
-      use neko::UsersDiscord::*;
-      qb.and_where(Expr::col((Table, DiscordId)).eq(id));
-    }
-    At::Guild(id) => {
-      use discord::Members::*;
-      qb.and_where(Expr::col((Table, GuildId)).eq(id));
-    }
-    At::App(id) => {
-      use steam::Playdata::*;
-      qb.and_where(Expr::col((Table, AppId)).eq(id));
-    }
-    At::None => {}
-  }
+    At::User(id) => qb.and_where(ex_col!(neko::UsersDiscord, DiscordId).eq(id)),
+    At::Guild(id) => qb.and_where(ex_col!(discord::Members, GuildId).eq(id)),
+    At::App(id) => qb.and_where(ex_col!(steam::Playdata, AppId).eq(id)),
+    At::None => &qb,
+  };
   qb.order_by(Alias::new("sum_count"), Order::Desc);
   qb
 }
@@ -242,11 +233,8 @@ fn nekoid_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
   use neko::*;
   qb.from(UsersSteam::Table);
   qb.from(UsersDiscord::Table);
-  qb.and_where(Expr::col((UsersSteam::Table, UsersSteam::NekoId)).equals((UsersDiscord::Table, UsersDiscord::NekoId)));
-  qb.and_where(
-    Expr::col((UsersSteam::Table, UsersSteam::SteamId))
-      .equals((steam::Playdata::Table, steam::Playdata::UserId)),
-  );
+  qb.and_where(ex_col!(UsersSteam, NekoId).equals(col!(UsersDiscord, NekoId)));
+  qb.and_where(ex_col!(UsersSteam, SteamId).equals(col!(steam::Playdata, UserId)));
 }
 
 fn member_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
@@ -259,7 +247,8 @@ fn member_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
   use neko::*;
   qb.from(Members::Table);
   qb.and_where(
-    Expr::col((Members::Table, Members::UserId)).equals((UsersDiscord::Table, UsersDiscord::DiscordId)),
+    Expr::col((Members::Table, Members::UserId))
+      .equals((UsersDiscord::Table, UsersDiscord::DiscordId)),
   );
 }
 

@@ -26,6 +26,11 @@ sea-query = "0"
 sea-query-binder = { version = "0", features = ["sqlx-postgres"] }
 serde = "1"
 sqlx = { version = "0.7", features = ["runtime-tokio", "postgres"] }
+teloxide = "0.12"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tokio-cron-scheduler = "0.9"
 unicode-truncate = "0.2"
+serde_urlencoded = "0.7"
+url = "2"
+axum_session = { version = "0.6", default-features = false, features = ["postgres-native"] }
+regex = "1.9"

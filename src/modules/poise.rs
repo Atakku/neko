@@ -11,6 +11,7 @@ use poise::{
   serenity_prelude::{Context as SCtx, GatewayIntents},
   BoxFuture, Command, Context, Event, FrameworkContext, FrameworkOptions,
 };
+use std::vec;
 
 pub type Fw = poise::Framework<Vec<EventHandler>, Err>;
 pub type FwCtx<'a> = FrameworkContext<'a, Vec<EventHandler>, Err>;
@@ -18,57 +19,45 @@ pub type Ctx<'a> = Context<'a, Vec<EventHandler>, Err>;
 pub type Cmd = Command<Vec<EventHandler>, Err>;
 pub type EventHandler = for<'a> fn(&'a SCtx, &'a Event<'a>) -> BoxFuture<'a, R>;
 
-/// Poise wrapper module, to let other modules add commands and subscribe to events easily
-pub struct Poise {
-  token: String,
-  pub intents: GatewayIntents,
-  pub commands: Vec<Cmd>,
-  pub event_handlers: Vec<EventHandler>,
-}
+// TODO: add documentation,
+// Poise wrapper module, to let other modules add commands and subscribe to events easily
 
-impl Default for Poise {
-  fn default() -> Self {
-    Self {
-      token: expect_env!("DISCORD_TOKEN"),
-      intents: GatewayIntents::GUILD_MESSAGES, // Required for text commands
-      commands: vec![],
-      event_handlers: vec![],
-    }
+module!(
+  Poise {
+    token: String = expect_env!("DISCORD_TOKEN"),
+    intents: GatewayIntents = GatewayIntents::GUILD_MESSAGES,
+    commands: Vec<Cmd> = vec![],
+    event_handlers: Vec<EventHandler> = vec![],
   }
-}
 
-impl Module for Poise {
-  fn init(&mut self, fw: &mut Framework) -> R {
+  fn init(fw) {
     fw.req_module::<Fluent>()?;
-    fw.runtime.push(|mds| {
-      let poise = mds.take::<Self>()?;
-      Ok(Box::pin(async move {
-        Ok(Some(tokio::spawn(async move {
-          Fw::builder()
-            .token(poise.token)
-            .intents(poise.intents)
-            .options(FrameworkOptions {
-              commands: localized_commands(poise.commands, loc()),
-              event_handler: |ctx, event, _fwc, ehs| {
-                Box::pin(async move {
-                  join_all(ehs.iter().map(|eh| (eh)(ctx, event))).await;
-                  Ok(())
-                })
-              },
-              ..Default::default()
-            })
-            .setup(move |_ctx, _ready, _framework| {
-              Box::pin(async move { Ok(poise.event_handlers) })
-            })
-            .run()
-            .await?;
-          Ok(())
-        })))
-      }))
+    runtime!(fw, |m| {
+      Ok(Some(tokio::spawn(async move {
+        Fw::builder()
+          .token(m.token)
+          .intents(m.intents)
+          .options(FrameworkOptions {
+            commands: localized_commands(m.commands, loc()),
+            event_handler: |c, e, _f, ehs| {
+              Box::pin(async move {
+                join_all(ehs.iter().map(|eh| (eh)(c, e))).await;
+                Ok(())
+              })
+            },
+            ..Default::default()
+          })
+          .setup(move |_c, _r, _f| {
+            Box::pin(async move { Ok(m.event_handlers) })
+          })
+          .run()
+          .await?;
+        Ok(())
+      })))
     });
-    Ok(())
   }
-}
+);
+
 
 const LOCALES: [&str; 31] = [
   "id", "da", "de", "en-GB", "en-US", "es-ES", "fr", "hr", "it", "lt", "hu", "nl", "no", "pl",

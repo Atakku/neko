@@ -18,25 +18,19 @@ use crate::{
 use axum::routing::get;
 use poise::{
   serenity_prelude::{Member, Role, RoleId, UserId},
-  BoxFuture, Event,
+  Event,
 };
-use sea_query::{Expr, Query};
+use sea_query::{Query};
 use tokio_cron_scheduler::Job;
 
 pub struct Steam;
 
 once_cell!(sapi_key, APIKEY: String);
 
-async fn root() -> &'static str {
-  "Hello from steam module!"
-}
-
 impl Module for Steam {
   fn init(&mut self, fw: &mut Framework) -> R {
     APIKEY.set(expect_env!("STEAMAPI_KEY"))?;
     fw.req_module::<Postgres>()?;
-    let axum = fw.req_module::<Axum>()?;
-    axum.routes.push(|r| r.route("/", get(root)));
     let poise = fw.req_module::<Poise>()?;
     poise.commands.push(steam());
     poise.event_handlers.push(roles());
@@ -84,12 +78,13 @@ pub async fn get_roles( m: &Member) -> Res<Vec<RoleId>> {
   qb.from(steam::Playdata::Table);
   qb.from(neko::UsersSteam::Table);
   qb.from(neko::UsersDiscord::Table);
-  qb.column((steam::DiscordRoles::Table, steam::DiscordRoles::RoleId));
-  qb.cond_where(Expr::col((steam::DiscordRoles::Table, steam::DiscordRoles::GuildId)).eq(m.guild_id.0 as i64));
-  qb.cond_where(Expr::col((steam::DiscordRoles::Table, steam::DiscordRoles::AppId)).equals((steam::Playdata::Table, steam::Playdata::AppId)));
-  qb.cond_where(Expr::col((neko::UsersSteam::Table, neko::UsersSteam::SteamId)).equals((steam::Playdata::Table, steam::Playdata::UserId)));
-  qb.cond_where(Expr::col((neko::UsersSteam::Table, neko::UsersSteam::NekoId)).equals((neko::UsersDiscord::Table, neko::UsersDiscord::NekoId)));
-  qb.cond_where(Expr::col((neko::UsersDiscord::Table, neko::UsersDiscord::DiscordId)).eq(m.user.id.0 as i64));
+  qb.column(col!(steam::DiscordRoles, RoleId));
+
+  qb.cond_where(ex_col!(steam::DiscordRoles, GuildId).eq(m.guild_id.0 as i64));
+  qb.cond_where(ex_col!(steam::DiscordRoles, AppId).equals(col!(steam::Playdata, AppId)));
+  qb.cond_where(ex_col!(neko::UsersSteam, SteamId).equals(col!(steam::Playdata, UserId)));
+  qb.cond_where(ex_col!(neko::UsersSteam, NekoId).equals(col!(neko::UsersDiscord, NekoId)));
+  qb.cond_where(ex_col!(neko::UsersDiscord, DiscordId).eq(m.user.id.0 as i64));
   qb.distinct();
   Ok(fetch_all!(&qb, (i64,))?.into_iter()
   .map(|r| RoleId(r.0 as u64))

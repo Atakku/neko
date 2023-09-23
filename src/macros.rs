@@ -27,11 +27,6 @@ macro_rules! once_cell {
   };
 }
 
-macro_rules! rt_async {
-    ($block:block) => {
-      Ok(Box::pin(async move $block))
-    };
-}
 macro_rules! build_sqlx {
   ($qb:expr) => {
     sea_query_binder::SqlxBinder::build_sqlx($qb, sea_query::PostgresQueryBuilder)
@@ -108,5 +103,53 @@ macro_rules! cmd_group {
   ($cmd:ident, $($sub:literal),*) => {
     #[poise::command(prefix_command, slash_command, subcommand_required, subcommands($($sub),*))]
     pub async fn $cmd(_: crate::modules::poise::Ctx<'_>) -> crate::core::R {Ok(())}
+  };
+}
+
+macro_rules! runtime {
+  ($fw:ident, |$m:ident| $block:block) => {
+    $fw.runtime.push(|modules| {
+      let $m = modules.take::<Self>()?;
+      Ok(Box::pin(async move $block))
+    });
+  };
+}
+
+macro_rules! module {
+  ($name:ident {$($pn:ident: $pt:ty = $pd:expr),*$(,)?} fn init($fw:ident) $block:block) => {
+    pub struct $name {
+      $(pub $pn: $pt),*
+    }
+
+    impl Default for $name {
+      fn default() -> Self { 
+        Self {
+          $($pn: $pd),*
+        }
+      }
+    }
+
+    impl crate::core::Module for $name {
+      fn init(&mut self, $fw: &mut crate::core::Framework) -> crate::core::R {
+        $block
+        Ok(())
+      }
+    }
+  };
+}
+ 
+
+macro_rules! col {
+  ($path:path, $ident:ident) => {
+    {
+      use $path::*;
+      (Table, $ident)
+    }
+  };
+}
+
+macro_rules! ex_col {
+  ($path:path, $ident:ident) => {
+    sea_query::Expr::col(col!($path, $ident))
   };
 }
