@@ -1,3 +1,5 @@
+use crate::query::steam::{update_users, update_playdata};
+
 use super::{axum::Axum, sqlx::db};
 use axum::{
   response::{IntoResponse, Redirect, Response},
@@ -137,6 +139,10 @@ async fn callback_steam(
     .unwrap();
   qb.on_conflict(OnConflict::column(SteamId).update_column(NekoId).to_owned());
   execute!(&qb).unwrap();
+  
+  let c = vec![(steam_id,)];
+  update_users(&c).await.unwrap();
+  update_playdata(&c).await.unwrap();
   Ok(Redirect::to("/settings").into_response())
 }
 
