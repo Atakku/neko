@@ -36,7 +36,7 @@ pub struct Variant {
   pub dive_type: DeepdiveType,
   pub name: String,
   pub biome: String,
-  pub seed: i32,
+  pub seed: i64,
   pub stages: Vec<Stage>,
 }
 
