@@ -17,7 +17,7 @@ async fn settings(session: SessionPgSession) -> Response {
     return Redirect::to("/login").into_response();
   };
   let mut res =format!("your id is '{id}'<br><a href=\"/link/discord\">link a discord acc</a><br><a href=\"/link/steam\">link a steam acc</a>").into_response();
-  res.headers_mut().append(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
+  res.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
   res
 }
 
@@ -28,7 +28,7 @@ async fn root(session: SessionPgSession) -> Response {
     }
     None => format!("you are not logged in<br><a href=\"/login\">i wanna log in</a>").into_response(),
   };
-  res.headers_mut().append(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
+  res.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
   res
 }
 async fn logout(session: SessionPgSession) -> Response {
@@ -38,7 +38,7 @@ async fn logout(session: SessionPgSession) -> Response {
       Redirect::to("/").into_response()
     }
     None => {let mut res = format!("you are not logged in lmao").into_response();
-    res.headers_mut().append(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
+    res.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
     res}
   }
 }
@@ -54,7 +54,7 @@ async fn login_now(session: SessionPgSession) -> Response {
       "you are already logged in, and your id is '{id}'<br><a href=\"/logout\">log me out!!!!!</a>"
     )
     .into_response();
-    res.headers_mut().append(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
+    res.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
     res},
     None => Redirect::to("/link/discord").into_response(),
   }
