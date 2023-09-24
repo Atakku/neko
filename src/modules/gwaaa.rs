@@ -21,7 +21,7 @@ async fn settings(session: SessionPgSession) -> Response {
   let Some(id) = session.get::<i32>("neko_id") else {
     return Redirect::to("/login").into_response();
   };
-  let mut res = format!("your id is '{id}'<br><a href=\"/link/discord\">link a discord acc</a><br><a href=\"/link/steam\">link a steam acc</a><br><a href=\"/link/github\">link a github acc</a>").into_response();
+  let mut res = format!("your id is '{id}'<br><a href=\"/link/discord\">link a discord acc</a><br><a href=\"/link/steam\">link a steam acc</a><br><a href=\"/link/github\">link a github acc</a><br><a href=\"/link/anilist\">link an anilist acc</a> <- warning, this technically gives full anilist access to neko.rs (as their oauth endpoint does not have any scopes), go complain to joshstar or smth").into_response();
   res
     .headers_mut()
     .insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
@@ -101,11 +101,11 @@ module!(
           Ok(r.route("/", get(root)).route("/login", get(login_now))
           .route("/logout", get(logout))
           .route("/settings", get(settings))
-          //.route("/callback/anilist", get(callback_anilist))
+          .route("/callback/anilist", get(callback_anilist))
           .route("/callback/github", get(callback_github))
           .route("/callback/steam", get(callback_steam))
           .route("/callback/discord", get(callback_discord))
-          //.route("/link/anilist", get(link_anilist))
+          .route("/link/anilist", get(link_anilist))
           .route("/link/github", get(link_github))
           .route("/link/steam", get(link_steam))
           .route("/link/discord", get(link_discord))
@@ -226,17 +226,20 @@ once_cell!(tokenreq_github, TOKENREQ_GITHUB: String, {
   urlencoding::encode(&cb))
 });
 
-//once_cell!(oauth_anilist_id, OAUTH_ANILIST_ID: String, {expect_env!("OAUTH_ANILIST_ID")});
-//once_cell!(oauth_anilist_secret, OAUTH_ANILIST_SECRET: String, {expect_env!("OAUTH_ANILIST_SECRET")});
-//once_cell!(redirect_anilist, REDIRECT_ANILIST: String, {
-//  let callback = serde_urlencoded::to_string(format!("{}/callback/anilist", root_domain().await)).unwrap();
-//  format!("https://anilist.co/api/v2/oauth/authorize\
-//  ?client_id={}&redirect_uri={callback}&response_type=code", oauth_anilist_id().await)
-//});
+once_cell!(oauth_anilist_id, OAUTH_ANILIST_ID: String, {expect_env!("OAUTH_ANILIST_ID")});
+once_cell!(oauth_anilist_secret, OAUTH_ANILIST_SECRET: String, {expect_env!("OAUTH_ANILIST_SECRET")});
 
-//async fn link_anilist() -> axum::response::Result<Response> {
-//  Ok(Redirect::to(redirect_anilist().await).into_response())
-//}
+once_cell!(redirect_anilist, REDIRECT_ANILIST: String, {
+  let cb = format!("{}/callback/anilist", root_domain().await);
+  format!("https://anilist.co/api/v2/oauth/authorize\
+  ?client_id={}&redirect_uri={}&response_type=code&state=todo", oauth_anilist_id().await,
+  urlencoding::encode(&cb))
+});
+
+
+async fn link_anilist() -> axum::response::Result<Response> {
+  Ok(Redirect::to(redirect_anilist().await).into_response())
+}
 
 async fn link_discord() -> axum::response::Result<Response> {
   Ok(Redirect::to(redirect_discord().await).into_response())
@@ -248,7 +251,7 @@ async fn link_github() -> axum::response::Result<Response> {
 
 async fn callback_discord(
   session: SessionPgSession,
-  Form(cb): Form<DiscordCallback>,
+  Form(cb): Form<AuthorizationCallback>,
 ) -> axum::response::Result<Response> {
   if cb.state != "todo" {
     return Ok(StatusCode::IM_A_TEAPOT.into_response());
@@ -330,7 +333,7 @@ async fn callback_discord(
 
 async fn callback_github(
   session: SessionPgSession,
-  Form(cb): Form<DiscordCallback>,
+  Form(cb): Form<AuthorizationCallback>,
 ) -> axum::response::Result<Response> {
   let Some(id) = session.get::<i32>("neko_id") else {
     return Ok(Redirect::to("/login").into_response());
@@ -378,6 +381,65 @@ async fn callback_github(
   Ok(Redirect::to("/settings").into_response())
 }
 
+
+
+async fn callback_anilist(
+  session: SessionPgSession,
+  Form(cb): Form<AuthorizationCallback>,
+) -> axum::response::Result<Response> {
+  let Some(id) = session.get::<i32>("neko_id") else {
+    return Ok(Redirect::to("/login").into_response());
+  };
+  if cb.state != "todo" {
+    return Ok(StatusCode::IM_A_TEAPOT.into_response());
+  }
+  let response = req()
+    .post("https://anilist.co/api/v2/oauth/token")
+    .header("Content-Type", "application/json")
+    .header("Accept", "application/json")
+    .json(&json!({
+      "client_id": oauth_anilist_id().await,
+      "client_secret": oauth_anilist_secret().await,
+      "grant_type": "authorization_code",
+      "redirect_uri": format!("{}/callback/anilist", root_domain().await),
+      "code": cb.code
+    }))
+    .send()
+    .await
+    .unwrap()
+    .json::<TokenRes>()
+    .await
+    .unwrap();
+
+  let response = req()
+    .post("https://graphql.anilist.co")
+    .header("Content-Type", "application/json")
+    .header("Accept", "application/json")
+    .bearer_auth(response.access_token)
+    .json(&json!({
+      "query": "{Viewer{id}}"
+    }))
+    .send()
+    .await
+    .unwrap()
+    .json::<AnilistRes>()
+    .await
+    .unwrap();
+  let gid = response.data.viewer.id;
+  use crate::schema::neko::UsersAnilist::*;
+  let mut qb = InsertStatement::new();
+  qb.into_table(Table);
+  qb.columns([NekoId, AnilistId]);
+  qb.values([id.into(), gid.into()]).unwrap();
+  qb.on_conflict(
+    OnConflict::column(AnilistId)
+      .update_column(AnilistId)
+      .to_owned(),
+  );
+  execute!(&qb).unwrap();
+  Ok(Redirect::to("/settings").into_response())
+}
+
 #[derive(serde::Serialize)]
 struct RedirectDiscord<'a> {
   response_type: &'static str,
@@ -389,7 +451,7 @@ struct RedirectDiscord<'a> {
 }
 
 #[derive(serde::Deserialize)]
-struct DiscordCallback {
+struct AuthorizationCallback {
   code: String,
   state: String,
 }
@@ -411,6 +473,15 @@ struct DiscordAuthRes {
   user: Option<DiscordUser>,
 }
 
+#[derive(serde::Deserialize)]
+struct AnilistRes {
+  data: AnilistData
+}
+#[derive(serde::Deserialize)]
+struct AnilistData {
+  #[serde(rename = "Viewer")]
+  viewer: GithubRes
+}
 #[derive(serde::Deserialize)]
 struct GithubRes {
   id: i64,
