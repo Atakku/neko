@@ -201,27 +201,30 @@ once_cell!(root_domain, ROOT_DOMAIN: String, {expect_env!("ROOT_DOMAIN")});
 once_cell!(oauth_discord_id, OAUTH_DISCORD_ID: String, {expect_env!("OAUTH_DISCORD_ID")});
 once_cell!(oauth_discord_secret, OAUTH_DISCORD_SECRET: String, {expect_env!("OAUTH_DISCORD_SECRET")});
 once_cell!(redirect_discord, REDIRECT_DISCORD: String, {
-  let uri = serde_urlencoded::to_string(format!("{}/callback/anilist", root_domain().await)).unwrap();
+  let cb = format!("{}/callback/anilist", root_domain().await);
   format!("https://discord.com/oauth2/authorize\
-  ?client_id={}&redirect_uri={uri}&response_type=code\
-  &scope=identify&prompt=consent&state=todo", oauth_discord_id().await)
+  ?client_id={}&redirect_uri={}&response_type=code\
+  &scope=identify&prompt=consent&state=todo",
+  oauth_discord_id().await, urlencoding::encode(&cb))
 });
 
 once_cell!(oauth_github_id, OAUTH_GITHUB_ID: String, {expect_env!("OAUTH_GITHUB_ID")});
 once_cell!(oauth_github_secret, OAUTH_GITHUB_SECRET: String, {expect_env!("OAUTH_GITHUB_SECRET")});
 
 once_cell!(redirect_github, REDIRECT_GITHUB: String, {
-  let uri = serde_urlencoded::to_string(format!("{}/callback/github", root_domain().await)).unwrap();
+  let cb = format!("{}/callback/github", root_domain().await);
   format!("https://github.com/login/oauth/authorize\
-  ?client_id={}&redirect_uri={uri}&response_type=code\
-  &allow_signup=false&state=todo", oauth_github_id().await)
+  ?client_id={}&redirect_uri={}&response_type=code\
+  &allow_signup=false&state=todo", oauth_github_id().await,
+  urlencoding::encode(&cb))
 });
 
 once_cell!(tokenreq_github, TOKENREQ_GITHUB: String, {
-  let uri = serde_urlencoded::to_string(format!("{}/callback/github", root_domain().await)).unwrap();
+  let cb = format!("{}/callback/github", root_domain().await);
   format!("https://github.com/login/oauth/access_token\
-  ?client_id={}&client_secret={}%redirect_uri={uri}",
-  oauth_github_id().await, oauth_github_secret().await)
+  ?client_id={}&client_secret={}%redirect_uri={}",
+  oauth_github_id().await, oauth_github_secret().await,
+  urlencoding::encode(&cb))
 });
 
 //once_cell!(oauth_anilist_id, OAUTH_ANILIST_ID: String, {expect_env!("OAUTH_ANILIST_ID")});
@@ -327,8 +330,6 @@ async fn callback_discord(
   Ok(Redirect::to("/settings").into_response())
 }
 
-
-
 async fn callback_github(
   session: SessionPgSession,
   Form(cb): Form<DiscordCallback>,
@@ -368,7 +369,11 @@ async fn callback_github(
   qb.into_table(Table);
   qb.columns([NekoId, GithubId]);
   qb.values([id.into(), gid.into()]).unwrap();
-  qb.on_conflict(OnConflict::column(GithubId).update_column(GithubId).to_owned());
+  qb.on_conflict(
+    OnConflict::column(GithubId)
+      .update_column(GithubId)
+      .to_owned(),
+  );
   execute!(&qb).unwrap();
   Ok(Redirect::to("/settings").into_response())
 }

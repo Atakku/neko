@@ -34,3 +34,4 @@ serde_urlencoded = "0.7"
 url = "2"
 axum_session = { version = "0.6", default-features = false, features = ["postgres-native"] }
 regex = "1.9"
+urlencoding = "2.1.3"
