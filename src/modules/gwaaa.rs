@@ -356,6 +356,8 @@ async fn callback_github(
   let response = client
     .get("https://api.github.com/user")
     .header("Content-Type", "application/json")
+    .header("X-GitHub-Api-Version", "2022-11-28")
+    .header("Accept", "application/vnd.github+json")
     .bearer_auth(response.access_token)
     .send()
     .await
