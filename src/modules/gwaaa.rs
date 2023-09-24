@@ -222,7 +222,7 @@ once_cell!(redirect_github, REDIRECT_GITHUB: String, {
 once_cell!(tokenreq_github, TOKENREQ_GITHUB: String, {
   let cb = format!("{}/callback/github", root_domain().await);
   format!("https://github.com/login/oauth/access_token\
-  ?client_id={}&client_secret={}%redirect_uri={}",
+  ?client_id={}&client_secret={}&redirect_uri={}",
   oauth_github_id().await, oauth_github_secret().await,
   urlencoding::encode(&cb))
 });
