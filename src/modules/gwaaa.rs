@@ -201,7 +201,7 @@ once_cell!(root_domain, ROOT_DOMAIN: String, {expect_env!("ROOT_DOMAIN")});
 once_cell!(oauth_discord_id, OAUTH_DISCORD_ID: String, {expect_env!("OAUTH_DISCORD_ID")});
 once_cell!(oauth_discord_secret, OAUTH_DISCORD_SECRET: String, {expect_env!("OAUTH_DISCORD_SECRET")});
 once_cell!(redirect_discord, REDIRECT_DISCORD: String, {
-  let cb = format!("{}/callback/anilist", root_domain().await);
+  let cb = format!("{}/callback/discord", root_domain().await);
   format!("https://discord.com/oauth2/authorize\
   ?client_id={}&redirect_uri={}&response_type=code\
   &scope=identify&prompt=consent&state=todo",
