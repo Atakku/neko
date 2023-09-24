@@ -1,6 +1,7 @@
 use super::{axum::Axum, sqlx::db};
 use crate::{
   core::Err,
+  modules::reqwest::req,
   query::steam::{update_playdata, update_users},
 };
 use axum::{
@@ -83,6 +84,7 @@ module!(
   Gwaaa {}
 
   fn init(fw) {
+    fw.req_module::<crate::modules::reqwest::Reqwest>()?;
     fw.req_module::<crate::modules::sqlx::Postgres>()?;
     REGEX.set(Regex::new("^https://steamcommunity.com/openid/id/([0-9]{17})$")?)?;
 
@@ -141,8 +143,8 @@ async fn link_steam() -> axum::response::Result<Response> {
       identity: "http://specs.openid.net/auth/2.0/identifier_select",
       claimed_id: "http://specs.openid.net/auth/2.0/identifier_select",
       mode: "checkid_setup",
-      realm: DOMAIN,
-      return_to: &format!("{DOMAIN}/callback/steam"),
+      realm: root_domain().await,
+      return_to: &format!("{}/callback/steam", root_domain().await),
     })
     .unwrap(),
   ));
@@ -161,8 +163,7 @@ async fn callback_steam(
   validate.mode = "check_authentication".to_owned();
   let form_str = serde_urlencoded::to_string(&validate).unwrap();
 
-  let client = reqwest::Client::new();
-  let response = client
+  let response = req()
     .post("https://steamcommunity.com/openid/login")
     .header("Content-Type", "application/x-www-form-urlencoded")
     .body(form_str)
@@ -194,8 +195,6 @@ async fn callback_steam(
   Ok(Redirect::to("/settings").into_response())
 }
 
-const DOMAIN: &str = "https://link.neko.rs";
-
 once_cell!(root_domain, ROOT_DOMAIN: String, {expect_env!("ROOT_DOMAIN")});
 
 once_cell!(oauth_discord_id, OAUTH_DISCORD_ID: String, {expect_env!("OAUTH_DISCORD_ID")});
@@ -221,7 +220,8 @@ once_cell!(redirect_github, REDIRECT_GITHUB: String, {
 
 once_cell!(tokenreq_github, TOKENREQ_GITHUB: String, {
   let cb = format!("{}/callback/github", root_domain().await);
-  format!("client_id={}&client_secret={}&redirect_uri={}",
+  format!("https://github.com/login/oauth/access_token\
+  ?client_id={}&client_secret={}&redirect_uri={}",
   oauth_github_id().await, oauth_github_secret().await,
   urlencoding::encode(&cb))
 });
@@ -258,12 +258,11 @@ async fn callback_discord(
     client_secret: &expect_env!("OAUTH_DISCORD_SECRET"),
     grant_type: &"authorization_code",
     code: &cb.code,
-    redirect_uri: &format!("{DOMAIN}/callback/discord"),
+    redirect_uri: &format!("{}/callback/discord", root_domain().await),
   })
   .unwrap();
 
-  let client = reqwest::Client::new();
-  let response = client
+  let response = req()
     .post("https://discord.com/api/v10/oauth2/token")
     .header("Content-Type", "application/x-www-form-urlencoded")
     .body(form_str)
@@ -274,7 +273,7 @@ async fn callback_discord(
     .await
     .unwrap();
 
-  let response = client
+  let response = req()
     .get("https://discord.com/api/v10/oauth2/@me")
     .header("Content-Type", "application/json")
     .bearer_auth(response.access_token)
@@ -340,12 +339,10 @@ async fn callback_github(
     return Ok(StatusCode::IM_A_TEAPOT.into_response());
   }
 
-  let client = reqwest::Client::new();
-  let response = client
-    .post("https://github.com/login/oauth/access_token")
+  let response = req()
+    .post(format!("{}&code={}", tokenreq_github().await, cb.code))
     .header("Content-Type", "application/x-www-form-urlencoded")
     .header("Accept", "application/json")
-    .body(format!("{}&code={}", tokenreq_github().await, cb.code))
     .send()
     .await
     .unwrap()
@@ -353,7 +350,7 @@ async fn callback_github(
     .await
     .unwrap();
 
-  let response = client
+  let response = req()
     .get("https://api.github.com/user")
     .header("Content-Type", "application/json")
     .header("X-GitHub-Api-Version", "2022-11-28")
