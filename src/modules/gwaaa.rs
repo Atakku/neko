@@ -221,7 +221,8 @@ once_cell!(redirect_github, REDIRECT_GITHUB: String, {
 
 once_cell!(tokenreq_github, TOKENREQ_GITHUB: String, {
   let cb = format!("{}/callback/github", root_domain().await);
-  format!("client_id={}&client_secret={}&redirect_uri={}",
+  format!("https://github.com/login/oauth/access_token\
+  ?client_id={}&client_secret={}&redirect_uri={}",
   oauth_github_id().await, oauth_github_secret().await,
   urlencoding::encode(&cb))
 });
@@ -342,9 +343,9 @@ async fn callback_github(
 
   let client = reqwest::Client::new();
   let response = client
-    .post("https://github.com/login/oauth/access_token")
+    .post(format!("{}&code={}", tokenreq_github().await, cb.code))
     .header("Content-Type", "application/x-www-form-urlencoded")
-    .body(format!("{}&code={}", tokenreq_github().await, cb.code))
+    .header("Accept", "application/json")
     .send()
     .await
     .unwrap()
