@@ -4,6 +4,7 @@
 
 #![feature(trait_alias)]
 #![feature(async_fn_in_trait)]
+#![feature(async_closure)]
 
 #[macro_use]
 pub mod macros;

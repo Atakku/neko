@@ -17,10 +17,13 @@ use crate::{
 };
 use axum::routing::get;
 use poise::{
-  serenity_prelude::{Member, Role, RoleId, UserId},
+  serenity_prelude::{
+    ButtonStyle, CollectComponentInteraction, CreateActionRow, InteractionResponseType, Member,
+    ReactionType, Role, RoleId, UserId,
+  },
   Event,
 };
-use sea_query::{Query};
+use sea_query::Query;
 use tokio_cron_scheduler::Job;
 
 pub struct Steam;
@@ -56,10 +59,7 @@ fn roles() -> EventHandler {
       match event {
         GuildMemberAddition { new_member: m } => {
           if !m.user.bot {
-            let roles = filter_roles(
-              m.roles(c).unwrap_or_default(),
-              get_roles(m).await?,
-            );
+            let roles = filter_roles(m.roles(c).unwrap_or_default(), get_roles(m).await?);
             let mut member = m.guild_id.member(c, m.user.id).await?;
             member.add_roles(c, roles.as_slice()).await?;
           }
@@ -71,7 +71,7 @@ fn roles() -> EventHandler {
   }
 }
 
-pub async fn get_roles( m: &Member) -> Res<Vec<RoleId>> {
+pub async fn get_roles(m: &Member) -> Res<Vec<RoleId>> {
   use crate::schema::*;
   let mut qb = Query::select();
   qb.from(steam::DiscordRoles::Table);
@@ -86,9 +86,12 @@ pub async fn get_roles( m: &Member) -> Res<Vec<RoleId>> {
   qb.cond_where(ex_col!(neko::UsersSteam, NekoId).equals(col!(neko::UsersDiscord, NekoId)));
   qb.cond_where(ex_col!(neko::UsersDiscord, DiscordId).eq(m.user.id.0 as i64));
   qb.distinct();
-  Ok(fetch_all!(&qb, (i64,))?.into_iter()
-  .map(|r| RoleId(r.0 as u64))
-  .collect())
+  Ok(
+    fetch_all!(&qb, (i64,))?
+      .into_iter()
+      .map(|r| RoleId(r.0 as u64))
+      .collect(),
+  )
 }
 
 pub fn filter_roles(og: Vec<Role>, add: Vec<RoleId>) -> Vec<RoleId> {
@@ -107,29 +110,31 @@ cmd_group!(steam, "user_top", "app_top", "guild_top", "top");
 
 #[poise::command(prefix_command, slash_command)]
 pub async fn top(ctx: Ctx<'_>, of: Of, by: By) -> R {
-  let output = format!("Top of {of} by {by}");
-  let m = ctx.reply(output.clone()).await?;
-  let c = fetch(output, of, by, At::None).await?;
-  m.edit(ctx, |m| m.content(c)).await?;
-  Ok(())
+  handle(ctx, format!("Top of {of} by {by}"), of, by, At::None).await
 }
 
 #[poise::command(prefix_command, slash_command)]
 pub async fn user_top(ctx: Ctx<'_>, of: Of, by: By, user: UserId) -> R {
-  let output = format!("Users's ({user}) top of {of} by {by}");
-  let m = ctx.reply(output.clone()).await?;
-  let c = fetch(output, of, by, At::User(user.0 as i64)).await?;
-  m.edit(ctx, |m| m.content(c)).await?;
-  Ok(())
+  handle(
+    ctx,
+    format!("Users's ({user}) top of {of} by {by}"),
+    of,
+    by,
+    At::User(user.0 as i64),
+  )
+  .await
 }
 
 #[poise::command(prefix_command, slash_command)]
 pub async fn app_top(ctx: Ctx<'_>, of: Of, by: By, #[autocomplete = "steam_apps"] app: i32) -> R {
-  let output = format!("Apps's ({app}) top of {of} by {by}");
-  let m = ctx.reply(output.clone()).await?;
-  let c = fetch(output, of, by, At::App(app)).await?;
-  m.edit(ctx, |m| m.content(c)).await?;
-  Ok(())
+  handle(
+    ctx,
+    format!("Apps's ({app}) top of {of} by {by}"),
+    of,
+    by,
+    At::App(app),
+  )
+  .await
 }
 
 #[poise::command(prefix_command, slash_command)]
@@ -139,23 +144,161 @@ pub async fn guild_top(
   by: By,
   #[autocomplete = "discord_guilds"] guild: String,
 ) -> R {
-  let output = format!("Guild's ({guild}) top of {of} by {by}");
-  let m = ctx.reply(output.clone()).await?;
-  let c = fetch(output, of, by, At::Guild(guild.parse::<i64>()?)).await?;
-  m.edit(ctx, |m| m.content(c)).await?;
-  Ok(())
+  handle(
+    ctx,
+    format!("Guild's ({guild}) top of {of} by {by}"),
+    of,
+    by,
+    At::Guild(guild.parse::<i64>()?),
+  )
+  .await
 }
 
-async fn fetch(input: String, of: Of, by: By, at: At) -> Res<String> {
-  let mut output = String::new();
+const SIZE: u64 = 10;
+const PAGES: u64 = 100; //todo
+
+async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
+  let mut msg = ctx
+    .send(|b| {
+      b.content(input.clone()).components(|b| {
+        b.create_action_row(|b| pagination_buttons(b, 0, 0, true, "pg_disp".into()))
+      })
+    })
+    .await?
+    .into_message()
+    .await?;
+
   let bys = match by {
     By::Playtime => "hours",
     By::Ownership => "copies",
   };
   let divider = if let By::Playtime = by { 60 } else { 1 };
-  let data = fetch_all!(&build_top_query(of, by, at), QueryOutput)?;
-  for d in data.into_iter().take(10) {
-    output += &format!("{} | {} | {}\n", d.row_num, d.sum_count / divider, d.name);
+  let qb = build_top_query(of, by, at);
+
+  let get_page = async move |page: u64| -> Res<String> {
+    let mut pb = qb.clone();
+    if page == 0 {
+      pb.limit(SIZE + 1);
+    } else {
+      pb.limit(SIZE + 2);
+      pb.offset(page * SIZE - 1);
+    }
+    let data = fetch_all!(&pb, QueryOutput)?;
+    let mut output = String::new();
+    for d in data.into_iter().take(10) {
+      output += &format!("{} | {} | {}\n", d.row_num, d.sum_count / divider, d.name);
+    }
+    Ok(output)
+  };
+
+  let mut page = 0;
+  let firstpage = get_page.clone()(page).await?;
+
+  msg
+    .edit(ctx, |b| {
+      b.content(format!("{input}\n```\n# | {bys} | name \n{}```", firstpage))
+        .components(|b| {
+          b.create_action_row(|b| pagination_buttons(b, page, PAGES, false, "".into()))
+        })
+    })
+    .await?;
+
+  let mut id = msg.id.0;
+
+  while let Some(press) = CollectComponentInteraction::new(ctx)
+    .message_id(msg.id)
+    .timeout(std::time::Duration::from_secs(300))
+    .await
+  {
+    match press.data.custom_id.as_str() {
+      "pg_prev" => page -= 1,
+      "pg_next" => page += 1,
+      _ => {}
+    }
+
+    press
+      .create_interaction_response(ctx, |f| {
+        f.kind(InteractionResponseType::UpdateMessage)
+          .interaction_response_data(|b| {
+            b.components(|b| {
+              b.create_action_row(|b| {
+                pagination_buttons(b, page, PAGES, true, press.data.custom_id.clone())
+              })
+            })
+          })
+      })
+      .await?;
+
+    let pageee = get_page.clone()(page).await.unwrap();
+
+    let mut msg = press.get_interaction_response(ctx).await?;
+    msg
+      .edit(ctx, |b| {
+        b.content(format!("{input}\n```\n# | {bys} | name \n{}```", pageee))
+          .components(|b| {
+            b.create_action_row(|b| {
+              pagination_buttons(b, page, PAGES, false, press.data.custom_id.clone())
+            })
+          })
+      })
+      .await?;
+
+    id = msg.id.0;
   }
-  Ok(format!("{input}\n```\n# | {bys} | name \n{output}```"))
+  ctx
+    .http()
+    .get_message(msg.channel_id.0, id)
+    .await?
+    .edit(ctx, |m| {
+      m.components(|b| b.create_action_row(|b| pagination_buttons(b, page, PAGES, true, "".into())))
+    })
+    .await?;
+  Ok(())
+}
+
+
+fn pagination_buttons(
+  b: &mut CreateActionRow,
+  page: u64,
+  pages: u64,
+  loading: bool,
+  event: String,
+) -> &mut CreateActionRow {
+  let l = ReactionType::Custom {
+    animated: true,
+    id: poise::serenity_prelude::EmojiId(1110725977069326346),
+    name: None,
+  };
+  b.create_button(|b| {
+    if event == "pg_prev" && loading {
+      b.emoji(l.clone())
+    } else {
+      b.label("<")
+    }
+    .custom_id(format!("pg_prev"))
+    .style(ButtonStyle::Secondary)
+    .disabled(loading || page == 0)
+  });
+  b.create_button(|b| {
+    if event == "pg_disp" && loading {
+      b.emoji(l.clone())
+    } else {
+      b.label(format!("{}/{pages}", page + 1))
+    }
+    .custom_id(format!("pg_disp"))
+    .style(ButtonStyle::Secondary)
+    .disabled(true)
+  });
+  b.create_button(|b| {
+    if event == "pg_next" && loading {
+      b.emoji(l)
+    } else {
+      b.label(">")
+    }
+    .custom_id(format!("pg_next"))
+    .style(ButtonStyle::Secondary)
+    .disabled(loading || page + 1 == pages)
+  });
+
+  b
 }
