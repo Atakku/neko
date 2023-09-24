@@ -29,6 +29,14 @@ pub enum UsersSteam {
 }
 
 #[derive(Iden)]
+#[iden(rename = "neko_users_github")]
+pub enum UsersGithub {
+  Table,
+  NekoId,
+  GithubId,
+}
+
+#[derive(Iden)]
 #[iden(rename = "neko_users_anilist")]
 pub enum UsersAnilist {
   Table,

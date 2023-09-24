@@ -1,0 +1,4 @@
+CREATE TABLE neko_users_github (
+  neko_id INTEGER NOT NULL REFERENCES neko_users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  github_id BIGINT PRIMARY KEY
+);

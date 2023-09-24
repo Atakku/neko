@@ -16,13 +16,21 @@ macro_rules! default_env {
 }
 
 macro_rules! once_cell {
-  ($fun:ident, $name:ident: $ty:ty) => {
+  (@define, $name:ident: $ty:ty) => {
     static $name: tokio::sync::OnceCell<$ty> = tokio::sync::OnceCell::const_new();
+  };
+  ($fun:ident, $name:ident: $ty:ty) => {
+    once_cell!(@define, $name: $ty);
 
     pub fn $fun() -> &'static $ty {
-      $name
-        .get()
-        .expect(concat!(stringify!($fun), " has not yet been initialized"))
+      $name.get().expect(concat!(stringify!($fun), " has not yet been initialized"))
+    }
+  };
+  ($fun:ident, $name:ident: $ty:ty, $block:block) => {
+    once_cell!(@define, $name: $ty);
+
+    pub async fn $fun() -> &'static $ty {
+      $name.get_or_init(|| async $block).await
     }
   };
 }

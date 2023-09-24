@@ -1,34 +1,43 @@
-use crate::query::steam::{update_users, update_playdata};
-
 use super::{axum::Axum, sqlx::db};
+use crate::{
+  core::Err,
+  query::steam::{update_playdata, update_users},
+};
 use axum::{
+  http::HeaderValue,
   response::{IntoResponse, Redirect, Response},
   routing::get,
-  Form, http::HeaderValue,
+  Form, Json,
 };
 use axum_session::{SessionConfig, SessionLayer, SessionPgSession, SessionPgSessionStore};
+use poise::serenity_prelude::json::json;
 use regex::Regex;
-use reqwest::{StatusCode, header};
-use sea_query::{InsertStatement, Query, QueryStatement, SelectStatement, OnConflict};
+use reqwest::{header, StatusCode};
+use sea_query::{InsertStatement, OnConflict, Query, SelectStatement};
 use url::Url;
 
 async fn settings(session: SessionPgSession) -> Response {
   let Some(id) = session.get::<i32>("neko_id") else {
     return Redirect::to("/login").into_response();
   };
-  let mut res =format!("your id is '{id}'<br><a href=\"/link/discord\">link a discord acc</a><br><a href=\"/link/steam\">link a steam acc</a>").into_response();
-  res.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
+  let mut res = format!("your id is '{id}'<br><a href=\"/link/discord\">link a discord acc</a><br><a href=\"/link/steam\">link a steam acc</a><br><a href=\"/link/github\">link a github acc</a>").into_response();
+  res
+    .headers_mut()
+    .insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
   res
 }
 
 async fn root(session: SessionPgSession) -> Response {
   let mut res = match session.get::<i32>("neko_id") {
-    Some(id) => {
-      format!("you are logged in as id {id}<br><a href=\"/settings\">go to settings</a>").into_response()
+    Some(id) => format!("you are logged in as id {id}<br><a href=\"/settings\">go to settings</a>")
+      .into_response(),
+    None => {
+      format!("you are not logged in<br><a href=\"/login\">i wanna log in</a>").into_response()
     }
-    None => format!("you are not logged in<br><a href=\"/login\">i wanna log in</a>").into_response(),
   };
-  res.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
+  res
+    .headers_mut()
+    .insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
   res
 }
 async fn logout(session: SessionPgSession) -> Response {
@@ -37,9 +46,13 @@ async fn logout(session: SessionPgSession) -> Response {
       session.destroy();
       Redirect::to("/").into_response()
     }
-    None => {let mut res = format!("you are not logged in lmao").into_response();
-    res.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
-    res}
+    None => {
+      let mut res = format!("you are not logged in lmao").into_response();
+      res
+        .headers_mut()
+        .insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
+      res
+    }
   }
 }
 
@@ -50,12 +63,16 @@ struct RedirForm {
 
 async fn login_now(session: SessionPgSession) -> Response {
   match session.get::<i32>("neko_id") {
-    Some(id) => {let mut res = format!(
+    Some(id) => {
+      let mut res = format!(
       "you are already logged in, and your id is '{id}'<br><a href=\"/logout\">log me out!!!!!</a>"
     )
-    .into_response();
-    res.headers_mut().insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
-    res},
+      .into_response();
+      res
+        .headers_mut()
+        .insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
+      res
+    }
     None => Redirect::to("/link/discord").into_response(),
   }
 }
@@ -82,8 +99,12 @@ module!(
           Ok(r.route("/", get(root)).route("/login", get(login_now))
           .route("/logout", get(logout))
           .route("/settings", get(settings))
+          //.route("/callback/anilist", get(callback_anilist))
+          .route("/callback/github", get(callback_github))
           .route("/callback/steam", get(callback_steam))
           .route("/callback/discord", get(callback_discord))
+          //.route("/link/anilist", get(link_anilist))
+          .route("/link/github", get(link_github))
           .route("/link/steam", get(link_steam))
           .route("/link/discord", get(link_discord))
         .layer(SessionLayer::new(session_store)))
@@ -92,18 +113,53 @@ module!(
   }
 );
 
+struct GenericError(Err);
+
+impl From<Err> for GenericError {
+  fn from(value: Err) -> Self {
+    Self(value)
+  }
+}
+
+impl IntoResponse for GenericError {
+  fn into_response(self) -> Response {
+    (
+      StatusCode::INTERNAL_SERVER_ERROR,
+      Json(json!({
+        "error": self.0.to_string(),
+      })),
+    )
+      .into_response()
+  }
+}
+
+async fn link_steam() -> axum::response::Result<Response> {
+  let mut redirect_url = Url::parse("https://steamcommunity.com/openid/login").unwrap();
+  redirect_url.set_query(Some(
+    &serde_urlencoded::to_string(&RedirectForm {
+      ns: "http://specs.openid.net/auth/2.0",
+      identity: "http://specs.openid.net/auth/2.0/identifier_select",
+      claimed_id: "http://specs.openid.net/auth/2.0/identifier_select",
+      mode: "checkid_setup",
+      realm: DOMAIN,
+      return_to: &format!("{DOMAIN}/callback/steam"),
+    })
+    .unwrap(),
+  ));
+  Ok(Redirect::to(redirect_url.as_str()).into_response())
+}
+
 // who needs actual error handling tbh
 async fn callback_steam(
   session: SessionPgSession,
   Form(cb): Form<VerifyForm>,
 ) -> axum::response::Result<Response> {
   let Some(id) = session.get::<i32>("neko_id") else {
-    return Ok(Redirect::to("/login?redirect=%2Fsettings").into_response());
+    return Ok(Redirect::to("/login").into_response());
   };
   let mut validate = cb;
   validate.mode = "check_authentication".to_owned();
-  let form_str =
-    serde_urlencoded::to_string(&validate).unwrap();
+  let form_str = serde_urlencoded::to_string(&validate).unwrap();
 
   let client = reqwest::Client::new();
   let response = client
@@ -122,24 +178,16 @@ async fn callback_steam(
     return Err("NOT VALID GWAAAA".into());
   }
 
-  let captures = sid_regex()
-    .captures(&validate.claimed_id)
-    .unwrap();
-  let steam_id = captures
-    .get(1)
-    .unwrap()
-    .as_str()
-    .parse::<i64>()
-    .unwrap();
+  let captures = sid_regex().captures(&validate.claimed_id).unwrap();
+  let steam_id = captures.get(1).unwrap().as_str().parse::<i64>().unwrap();
   use crate::schema::neko::UsersSteam::*;
   let mut qb = InsertStatement::new();
   qb.into_table(Table);
   qb.columns([NekoId, SteamId]);
-  qb.values([id.into(), steam_id.into()])
-    .unwrap();
+  qb.values([id.into(), steam_id.into()]).unwrap();
   qb.on_conflict(OnConflict::column(SteamId).update_column(NekoId).to_owned());
   execute!(&qb).unwrap();
-  
+
   let c = vec![(steam_id,)];
   update_users(&c).await.unwrap();
   update_playdata(&c).await.unwrap();
@@ -148,36 +196,52 @@ async fn callback_steam(
 
 const DOMAIN: &str = "https://link.neko.rs";
 
-async fn link_steam() -> axum::response::Result<Response> {
-  let form = RedirectForm {
-    ns: "http://specs.openid.net/auth/2.0",
-    identity: "http://specs.openid.net/auth/2.0/identifier_select",
-    claimed_id: "http://specs.openid.net/auth/2.0/identifier_select",
-    mode: "checkid_setup",
-    realm: DOMAIN,
-    return_to: &format!("{DOMAIN}/callback/steam"),
-  };
-  let form_str = serde_urlencoded::to_string(&form).unwrap();
+once_cell!(root_domain, ROOT_DOMAIN: String, {expect_env!("ROOT_DOMAIN")});
 
-  let mut redirect_url = Url::parse("https://steamcommunity.com/openid/login").unwrap();
-  redirect_url.set_query(Some(&form_str));
-  Ok(Redirect::to(redirect_url.as_str()).into_response())
+once_cell!(oauth_discord_id, OAUTH_DISCORD_ID: String, {expect_env!("OAUTH_DISCORD_ID")});
+once_cell!(oauth_discord_secret, OAUTH_DISCORD_SECRET: String, {expect_env!("OAUTH_DISCORD_SECRET")});
+once_cell!(redirect_discord, REDIRECT_DISCORD: String, {
+  let uri = serde_urlencoded::to_string(format!("{}/callback/anilist", root_domain().await)).unwrap();
+  format!("https://discord.com/oauth2/authorize\
+  ?client_id={}&redirect_uri={uri}&response_type=code\
+  &scope=identify&prompt=consent&state=todo", oauth_discord_id().await)
+});
+
+once_cell!(oauth_github_id, OAUTH_GITHUB_ID: String, {expect_env!("OAUTH_GITHUB_ID")});
+once_cell!(oauth_github_secret, OAUTH_GITHUB_SECRET: String, {expect_env!("OAUTH_GITHUB_SECRET")});
+
+once_cell!(redirect_github, REDIRECT_GITHUB: String, {
+  let uri = serde_urlencoded::to_string(format!("{}/callback/github", root_domain().await)).unwrap();
+  format!("https://github.com/login/oauth/authorize\
+  ?client_id={}&redirect_uri={uri}&response_type=code\
+  &allow_signup=false&state=todo", oauth_github_id().await)
+});
+
+once_cell!(tokenreq_github, TOKENREQ_GITHUB: String, {
+  let uri = serde_urlencoded::to_string(format!("{}/callback/github", root_domain().await)).unwrap();
+  format!("https://github.com/login/oauth/access_token\
+  ?client_id={}&client_secret={}%redirect_uri={uri}",
+  oauth_github_id().await, oauth_github_secret().await)
+});
+
+//once_cell!(oauth_anilist_id, OAUTH_ANILIST_ID: String, {expect_env!("OAUTH_ANILIST_ID")});
+//once_cell!(oauth_anilist_secret, OAUTH_ANILIST_SECRET: String, {expect_env!("OAUTH_ANILIST_SECRET")});
+//once_cell!(redirect_anilist, REDIRECT_ANILIST: String, {
+//  let callback = serde_urlencoded::to_string(format!("{}/callback/anilist", root_domain().await)).unwrap();
+//  format!("https://anilist.co/api/v2/oauth/authorize\
+//  ?client_id={}&redirect_uri={callback}&response_type=code", oauth_anilist_id().await)
+//});
+
+//async fn link_anilist() -> axum::response::Result<Response> {
+//  Ok(Redirect::to(redirect_anilist().await).into_response())
+//}
+
+async fn link_discord() -> axum::response::Result<Response> {
+  Ok(Redirect::to(redirect_discord().await).into_response())
 }
 
-async fn link_discord(session: SessionPgSession) -> axum::response::Result<Response> {
-  let form = RedirectDiscord {
-    response_type: "code",
-    client_id: "1064379551318278204",
-    scope: "identify",
-    state: "todo",
-    redirect_uri: format!("{DOMAIN}/callback/discord"),
-    prompt: "consent",
-  };
-  let form_str = serde_urlencoded::to_string(&form).unwrap();
-
-  let mut redirect_url = Url::parse("https://discord.com/oauth2/authorize").unwrap();
-  redirect_url.set_query(Some(&form_str));
-  Ok(Redirect::to(redirect_url.as_str()).into_response())
+async fn link_github() -> axum::response::Result<Response> {
+  Ok(Redirect::to(redirect_github().await).into_response())
 }
 
 async fn callback_discord(
@@ -189,11 +253,12 @@ async fn callback_discord(
   }
   let form_str = serde_urlencoded::to_string(&DiscordTokenReq {
     client_id: &"1064379551318278204",
-    client_secret: &expect_env!("DISCORD_SECRET"),
+    client_secret: &expect_env!("OAUTH_DISCORD_SECRET"),
     grant_type: &"authorization_code",
     code: &cb.code,
     redirect_uri: &format!("{DOMAIN}/callback/discord"),
-  }).unwrap();
+  })
+  .unwrap();
 
   let client = reqwest::Client::new();
   let response = client
@@ -202,9 +267,8 @@ async fn callback_discord(
     .body(form_str)
     .send()
     .await
-    .unwrap();
-  let response = response
-    .json::<DiscordTokenRes>()
+    .unwrap()
+    .json::<TokenRes>()
     .await
     .unwrap();
 
@@ -241,9 +305,7 @@ async fn callback_discord(
           qb.columns([Slug]);
           qb.values([Option::<String>::None.into()]).unwrap();
           qb.returning(Query::returning().columns([Id]));
-          fetch_one!(&qb, (i32,))
-            .unwrap()
-            .0
+          fetch_one!(&qb, (i32,)).unwrap().0
         }
       };
       session.set("neko_id", newid);
@@ -255,9 +317,58 @@ async fn callback_discord(
   let mut qb = InsertStatement::new();
   qb.into_table(Table);
   qb.columns([NekoId, DiscordId]);
-  qb.values([id.into(), did.into()])
+  qb.values([id.into(), did.into()]).unwrap();
+  qb.on_conflict(
+    OnConflict::column(DiscordId)
+      .update_column(NekoId)
+      .to_owned(),
+  );
+  execute!(&qb).unwrap();
+  Ok(Redirect::to("/settings").into_response())
+}
+
+
+
+async fn callback_github(
+  session: SessionPgSession,
+  Form(cb): Form<DiscordCallback>,
+) -> axum::response::Result<Response> {
+  let Some(id) = session.get::<i32>("neko_id") else {
+    return Ok(Redirect::to("/login").into_response());
+  };
+  if cb.state != "todo" {
+    return Ok(StatusCode::IM_A_TEAPOT.into_response());
+  }
+
+  let client = reqwest::Client::new();
+  let response = client
+    .post(format!("{}&code={}", tokenreq_github().await, cb.code))
+    .header("Content-Type", "application/x-www-form-urlencoded")
+    .send()
+    .await
+    .unwrap()
+    .json::<TokenRes>()
+    .await
     .unwrap();
-    qb.on_conflict(OnConflict::column(DiscordId).update_column(NekoId).to_owned());
+
+  let response = client
+    .get("https://api.github.com/user")
+    .header("Content-Type", "application/json")
+    .bearer_auth(response.access_token)
+    .send()
+    .await
+    .unwrap()
+    .json::<GithubRes>()
+    .await
+    .unwrap();
+
+  let gid = response.id;
+  use crate::schema::neko::UsersGithub::*;
+  let mut qb = InsertStatement::new();
+  qb.into_table(Table);
+  qb.columns([NekoId, GithubId]);
+  qb.values([id.into(), gid.into()]).unwrap();
+  qb.on_conflict(OnConflict::column(GithubId).update_column(GithubId).to_owned());
   execute!(&qb).unwrap();
   Ok(Redirect::to("/settings").into_response())
 }
@@ -287,13 +398,17 @@ struct DiscordTokenReq<'a> {
   redirect_uri: &'a str,
 }
 #[derive(serde::Deserialize)]
-struct DiscordTokenRes {
-  access_token: String
+struct TokenRes {
+  access_token: String,
 }
-
 #[derive(serde::Deserialize)]
 struct DiscordAuthRes {
   user: Option<DiscordUser>,
+}
+
+#[derive(serde::Deserialize)]
+struct GithubRes {
+  id: i64,
 }
 #[derive(serde::Deserialize)]
 struct DiscordUser {
