@@ -208,7 +208,7 @@ mod guild {
     handle(ctx, title, of.into(), by, At::Guild(guild.parse::<i64>()?)).await
   }
 }
-const SIZE: u64 = 10;
+const SIZE: u64 = 15;
 const PAGES: u64 = 100; //todo
 
 async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
@@ -239,7 +239,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
     }
     let data = fetch_all!(&pb, QueryOutput)?;
     let mut output = String::new();
-    for d in data.into_iter().take(10) {
+    for d in data.into_iter() {
       output += &format!("{} | {} | {}\n", d.row_num, d.sum_count / divider, d.name);
     }
     Ok(output)
@@ -250,7 +250,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
 
   msg
     .edit(ctx, |b| {
-      b.content(format!("{input}\n```\n# | {bys} | name \n{}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", firstpage, ctx.locale().unwrap_or("none")))
+      b.content(format!("{input}\n```\n# | {bys} | name \n{firstpage}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", ctx.locale().unwrap_or("none")))
         .components(|b| {
           b.create_action_row(|b| pagination_buttons(b, page, PAGES, false, "".into()))
         })
@@ -288,7 +288,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
     let mut msg = press.get_interaction_response(ctx).await?;
     msg
       .edit(ctx, |b| {
-        b.content(format!("{input}\n```\n# | {bys} | name \n{}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", firstpage, ctx.locale().unwrap_or("none")))
+        b.content(format!("{input}\n```\n# | {bys} | name \n{pageee}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", ctx.locale().unwrap_or("none")))
           .components(|b| {
             b.create_action_row(|b| {
               pagination_buttons(b, page, PAGES, false, press.data.custom_id.clone())
