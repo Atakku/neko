@@ -139,7 +139,7 @@ async fn metrics() -> String {
   match fetch_all!(&qb, (String, i64)) {
     Ok(data) => {
       for (u, p) in data {
-        output += &format!("steam_yser_summary{{user=\"{u}\"}} {p}\n");
+        output += &format!("steam_user_summary{{user=\"{u}\"}} {p}\n");
       }
     }
     Result::Err(err) => log::warn!("{}", err),
