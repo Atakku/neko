@@ -2,7 +2,7 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use super::{axum::Axum, cron::Cron, poise::EventHandler};
+use super::{cron::Cron, poise::EventHandler};
 use crate::{
   core::*,
   modules::{
@@ -10,18 +10,16 @@ use crate::{
     sqlx::Postgres,
   },
   query::{
-    autocomplete::*,
     neko::all_steam_connections,
-    steam::{build_top_query, update_apps, update_playdata, update_users, At, By, Of, QueryOutput},
+    steam::{build_top_query, update_playdata, update_users, At, By, Of, QueryOutput},
   },
 };
-use axum::routing::get;
 use poise::{
   serenity_prelude::{
     ButtonStyle, CollectComponentInteraction, CreateActionRow, InteractionResponseType, Member,
-    ReactionType, Role, RoleId, UserId,
+    ReactionType, Role, RoleId,
   },
-  ChoiceParameter, Event,
+  Event,
 };
 use sea_query::Query;
 use tokio_cron_scheduler::Job;
@@ -113,7 +111,7 @@ cmd_group!(app, "app::top");
 cmd_group!(guild, "guild::top");
 
 #[poise::command(prefix_command, slash_command)]
-pub async fn top(ctx: Ctx<'_>, of: Of, by: By) -> R {
+pub async fn top(ctx: Ctx<'_>, by: By, of: Of) -> R {
   handle(ctx, format!("Top of {of} by {by}"), of, by, At::None).await
 }
 
@@ -159,7 +157,7 @@ mod app {
   }
 
   #[poise::command(prefix_command, slash_command)]
-  pub async fn top(ctx: Ctx<'_>, of: AppTop, by: By, #[autocomplete = "steam_apps"] app: i32) -> R {
+  pub async fn top(ctx: Ctx<'_>, by: By, of: AppTop, #[autocomplete = "steam_apps"] app: i32) -> R {
     let title = format!("Apps's ({app}) top of {of} by {by}");
     handle(ctx, title, of.into(), by, At::App(app)).await
   }
@@ -170,7 +168,7 @@ mod guild {
     core::R,
     modules::{poise::Ctx, steam::handle},
     query::{
-      autocomplete::{discord_guilds, steam_apps},
+      autocomplete::discord_guilds,
       steam::{At, By, Of},
     },
   };
@@ -194,8 +192,8 @@ mod guild {
   #[poise::command(prefix_command, slash_command)]
   pub async fn top(
     ctx: Ctx<'_>,
-    of: GuildTop,
     by: By,
+    of: GuildTop,
     //#[autocomplete = "steam_apps"] app: Option<i32>,
     #[autocomplete = "discord_guilds"] guild: Option<String>,
   ) -> R {
@@ -252,7 +250,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
 
   msg
     .edit(ctx, |b| {
-      b.content(format!("{input}\n```\n# | {bys} | name \n{}```", firstpage))
+      b.content(format!("{input}\n```\n# | {bys} | name \n{}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", firstpage, ctx.locale().unwrap_or("none")))
         .components(|b| {
           b.create_action_row(|b| pagination_buttons(b, page, PAGES, false, "".into()))
         })
@@ -290,7 +288,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
     let mut msg = press.get_interaction_response(ctx).await?;
     msg
       .edit(ctx, |b| {
-        b.content(format!("{input}\n```\n# | {bys} | name \n{}```", pageee))
+        b.content(format!("{input}\n```\n# | {bys} | name \n{}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", firstpage, ctx.locale().unwrap_or("none")))
           .components(|b| {
             b.create_action_row(|b| {
               pagination_buttons(b, page, PAGES, false, press.data.custom_id.clone())
