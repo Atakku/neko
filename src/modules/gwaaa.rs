@@ -131,7 +131,7 @@ async fn metrics() -> String {
   qb.from(Table);
   qb.columns([UserId, AppId, Playtime]);
   for (u, a, p) in fetch_all!(&qb, (i64, i64, i32)).unwrap_or(vec![]) {
-    output += &format!("steam_playdata{{userid=\"{u}\",appid=\"{a}\"}} {p}");
+    output += &format!("steam_playdata{{userid=\"{u}\",appid=\"{a}\"}} {p}\n");
   }
 
   output
