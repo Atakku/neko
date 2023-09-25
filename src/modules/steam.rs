@@ -239,13 +239,13 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
     }
     let data = fetch_all!(&pb, QueryOutput)?;
     let mut output = String::new();
-    for (i, d) in data.into_iter().enumerate() {
-      if i == SIZE as usize - 1 {
-        output += "-------------------"
+    for (i, d) in data.iter().enumerate() {
+      if i == &data.len() - 1 && page != 0 {
+        output += "-------------------\n"
       }
       output += &format!("{} | {} | {}\n", d.row_num, d.sum_count / divider, d.name);
       if i == 0 {
-        output += "-------------------"
+        output += "-------------------\n"
       } 
     }
     Ok(output)
