@@ -5,7 +5,7 @@ use crate::{
   query::{
     neko::all_steam_connections,
     steam::{update_playdata, update_users},
-  },
+  }, interface::steam::App,
 };
 use axum::{
   http::HeaderValue,
@@ -125,13 +125,16 @@ module!(
 async fn metrics() -> String {
   let mut output = String::new();
 
-  use crate::schema::steam::Playdata::*;
+  use crate::schema::steam::*;
 
   let mut qb = Query::select();
-  qb.from(Table);
-  qb.columns([UserId, AppId, Playtime]);
-  for (u, a, p) in fetch_all!(&qb, (i64, i64, i32)).unwrap_or(vec![]) {
-    output += &format!("steam_playdata{{userid=\"{u}\",appid=\"{a}\"}} {p}\n");
+  qb.from(Playdata::Table);
+  qb.from(Apps::Table);
+  qb.and_where(ex_col!(Playdata, AppId).equals(col!(Apps, Id)));
+  qb.columns([col!(Playdata, UserId), col!(Playdata, AppId), col!(Playdata, Playtime)]);
+  qb.column(col!(Apps, Name));
+  for (u, a, p, n) in fetch_all!(&qb, (i64, i64, i32, String)).unwrap_or(vec![]) {
+    output += &format!("steam_playdata{{userid=\"{u}\",appid=\"{a}\",appname=\"{n}\"}} {p}\n");
   }
 
   output
