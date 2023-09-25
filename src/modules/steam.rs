@@ -36,7 +36,7 @@ impl Module for Steam {
     poise.commands.push(steam());
     poise.event_handlers.push(roles());
     let cron = fw.req_module::<Cron>()?;
-    cron.jobs.push(Job::new_async("0 0 */6 * * *", |_id, _jsl| {
+    cron.jobs.push(Job::new_async("0 0 */3 * * *", |_id, _jsl| {
       Box::pin(async move {
         minor_update().await.unwrap();
       })
@@ -114,6 +114,7 @@ cmd_group!(guild, "guild::top");
 pub async fn top(ctx: Ctx<'_>, by: By, of: Of) -> R {
   handle(ctx, format!("Top of {of} by {by}"), of, by, At::None).await
 }
+//context_menu_command = "gwaa"
 
 mod user {
   use crate::{
