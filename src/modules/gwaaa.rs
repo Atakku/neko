@@ -2,7 +2,10 @@ use super::{axum::Axum, sqlx::db};
 use crate::{
   core::Err,
   modules::reqwest::req,
-  query::steam::{update_playdata, update_users},
+  query::{
+    neko::all_steam_connections,
+    steam::{update_playdata, update_users},
+  },
 };
 use axum::{
   http::HeaderValue,
@@ -109,11 +112,30 @@ module!(
           .route("/link/github", get(link_github))
           .route("/link/steam", get(link_steam))
           .route("/link/discord", get(link_discord))
-        .layer(SessionLayer::new(session_store)))
+        .layer(SessionLayer::new(session_store))
+
+        .route("/metrics", get(metrics))
+
+      )
       })
     });
   }
 );
+
+async fn metrics() -> String {
+  let mut output = String::new();
+
+  use crate::schema::steam::Playdata::*;
+
+  let mut qb = Query::select();
+  qb.from(Table);
+  qb.columns([UserId, AppId, Playtime]);
+  for (u, a, p) in fetch_all!(&qb, (i64, i64, i32)).unwrap_or(vec![]) {
+    output += &format!("steam_playdata{{userid=\"{u}\",appid=\"{a}\"}} {p}");
+  }
+
+  output
+}
 
 struct GenericError(Err);
 
@@ -235,7 +257,6 @@ once_cell!(redirect_anilist, REDIRECT_ANILIST: String, {
   ?client_id={}&redirect_uri={}&response_type=code&state=todo", oauth_anilist_id().await,
   urlencoding::encode(&cb))
 });
-
 
 async fn link_anilist() -> axum::response::Result<Response> {
   Ok(Redirect::to(redirect_anilist().await).into_response())
@@ -381,8 +402,6 @@ async fn callback_github(
   Ok(Redirect::to("/settings").into_response())
 }
 
-
-
 async fn callback_anilist(
   session: SessionPgSession,
   Form(cb): Form<AuthorizationCallback>,
@@ -475,12 +494,12 @@ struct DiscordAuthRes {
 
 #[derive(serde::Deserialize)]
 struct AnilistRes {
-  data: AnilistData
+  data: AnilistData,
 }
 #[derive(serde::Deserialize)]
 struct AnilistData {
   #[serde(rename = "Viewer")]
-  viewer: GithubRes
+  viewer: GithubRes,
 }
 #[derive(serde::Deserialize)]
 struct GithubRes {
