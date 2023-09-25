@@ -130,11 +130,11 @@ async fn metrics() -> String {
   qb.from(Playdata::Table);
   qb.and_where(ex_col!(Playdata, AppId).equals(col!(Apps, Id)));
   qb.and_where(ex_col!(Playdata, UserId).equals(col!(Users, Id)));
+  qb.column(col!(Users, Name));
   qb.expr_as(
     Func::sum(ex_col!(Playdata, Playtime)),
     Alias::new("sum_count"),
   );
-  qb.column(col!(Users, Name));
   qb.group_by_col(col!(Users, Id));
   for (u, p) in fetch_all!(&qb, (String, i32)).unwrap_or(vec![]) {
     output += &format!("steam_yser_summary{{user=\"{u}\"}} {p}\n");
