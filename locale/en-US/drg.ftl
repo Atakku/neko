@@ -1,2 +1,2 @@
 cmd_drg = drg
-  .desc = DEEP ROCK GALACTICCC
+  .desc = Get current Deep Dives
