@@ -14,7 +14,7 @@ use axum_session::{SessionConfig, SessionLayer, SessionPgSession, SessionPgSessi
 use poise::serenity_prelude::json::json;
 use regex::Regex;
 use reqwest::{header, StatusCode};
-use sea_query::{InsertStatement, OnConflict, Query, SelectStatement, Alias, Func};
+use sea_query::{Alias, Func, InsertStatement, OnConflict, Query, SelectStatement};
 use url::Url;
 
 async fn settings(session: SessionPgSession) -> Response {
@@ -136,8 +136,13 @@ async fn metrics() -> String {
     Alias::new("sum_count"),
   );
   qb.group_by_col(col!(Users, Id));
-  for (u, p) in fetch_all!(&qb, (String, i32)).unwrap_or(vec![]) {
-    output += &format!("steam_yser_summary{{user=\"{u}\"}} {p}\n");
+  match fetch_all!(&qb, (String, i32)) {
+    Ok(data) => {
+      for (u, p) in data {
+        output += &format!("steam_yser_summary{{user=\"{u}\"}} {p}\n");
+      }
+    }
+    Result::Err(err) => log::warn!("{}", err),
   }
 
   output
