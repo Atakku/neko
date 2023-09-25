@@ -14,7 +14,7 @@ use axum::{
   Form, Json,
 };
 use axum_session::{SessionConfig, SessionLayer, SessionPgSession, SessionPgSessionStore};
-use poise::serenity_prelude::json::json;
+use poise::serenity_prelude::{json::json, User};
 use regex::Regex;
 use reqwest::{header, StatusCode};
 use sea_query::{InsertStatement, OnConflict, Query, SelectStatement};
@@ -128,13 +128,16 @@ async fn metrics() -> String {
   use crate::schema::steam::*;
 
   let mut qb = Query::select();
-  qb.from(Playdata::Table);
   qb.from(Apps::Table);
+  qb.from(Users::Table);
+  qb.from(Playdata::Table);
   qb.and_where(ex_col!(Playdata, AppId).equals(col!(Apps, Id)));
-  qb.columns([col!(Playdata, UserId), col!(Playdata, AppId), col!(Playdata, Playtime)]);
+  qb.and_where(ex_col!(Playdata, UserId).equals(col!(Users, Id)));
   qb.column(col!(Apps, Name));
-  for (u, a, p, n) in fetch_all!(&qb, (i64, i64, i32, String)).unwrap_or(vec![]) {
-    output += &format!("steam_playdata{{userid=\"{u}\",appid=\"{a}\",appname=\"{n}\"}} {p}\n");
+  qb.column(col!(Users, Name));
+  qb.column(col!(Playdata, Playtime));
+  for (a, u, p) in fetch_all!(&qb, (String, String, i32)).unwrap_or(vec![]) {
+    output += &format!("steam_playdata{{app=\"{a}\",user=\"{u}\"}} {p}\n");
   }
 
   output
