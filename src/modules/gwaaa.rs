@@ -2,10 +2,7 @@ use super::{axum::Axum, sqlx::db};
 use crate::{
   core::Err,
   modules::reqwest::req,
-  query::{
-    neko::all_steam_connections,
-    steam::{update_playdata, update_users},
-  }, interface::steam::App,
+  query::steam::{update_playdata, update_users},
 };
 use axum::{
   http::HeaderValue,
@@ -14,10 +11,10 @@ use axum::{
   Form, Json,
 };
 use axum_session::{SessionConfig, SessionLayer, SessionPgSession, SessionPgSessionStore};
-use poise::serenity_prelude::{json::json, User};
+use poise::serenity_prelude::json::json;
 use regex::Regex;
 use reqwest::{header, StatusCode};
-use sea_query::{InsertStatement, OnConflict, Query, SelectStatement};
+use sea_query::{InsertStatement, OnConflict, Query, SelectStatement, Alias, Func};
 use url::Url;
 
 async fn settings(session: SessionPgSession) -> Response {
@@ -133,11 +130,14 @@ async fn metrics() -> String {
   qb.from(Playdata::Table);
   qb.and_where(ex_col!(Playdata, AppId).equals(col!(Apps, Id)));
   qb.and_where(ex_col!(Playdata, UserId).equals(col!(Users, Id)));
-  qb.column(col!(Apps, Name));
+  qb.expr_as(
+    Func::sum(ex_col!(Playdata, Playtime)),
+    Alias::new("sum_count"),
+  );
   qb.column(col!(Users, Name));
-  qb.column(col!(Playdata, Playtime));
-  for (a, u, p) in fetch_all!(&qb, (String, String, i32)).unwrap_or(vec![]) {
-    output += &format!("steam_playdata{{app=\"{a}\",user=\"{u}\"}} {p}\n");
+  qb.group_by_col(col!(Users, Id));
+  for (u, p) in fetch_all!(&qb, (String, i32)).unwrap_or(vec![]) {
+    output += &format!("steam_yser_summary{{user=\"{u}\"}} {p}\n");
   }
 
   output
