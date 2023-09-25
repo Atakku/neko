@@ -136,7 +136,7 @@ async fn metrics() -> String {
     Alias::new("sum_count"),
   );
   qb.group_by_col(col!(Users, Id));
-  match fetch_all!(&qb, (String, i32)) {
+  match fetch_all!(&qb, (String, i64)) {
     Ok(data) => {
       for (u, p) in data {
         output += &format!("steam_yser_summary{{user=\"{u}\"}} {p}\n");
