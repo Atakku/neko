@@ -27,10 +27,10 @@ cmd_steam_user_top = топ
   .prm_user = user
   .prm_user_desc = The target user of the top (defaults to you)
 
-cho_by = по
+cho_by =
   .Playtime = Часам игры
   .Ownership = Копиям игры
-cho_of = из
+cho_of =
   .Apps = Приложений
   .Guilds = Серверов
   .Users = Пользователей

@@ -27,7 +27,7 @@ cmd_steam_user_top = top
   .prm_user = user
   .prm_user_desc = The target user of the top (defaults to you)
 
-cho_by = by
+cho_by =
   .Playtime = Playtime
   .Ownership = Ownership
 cho_of =
