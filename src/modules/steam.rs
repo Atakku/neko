@@ -2,7 +2,7 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use super::{cron::Cron, poise::EventHandler};
+use super::{cron::Cron, poise::EventHandler, svgui::{render_svg, SvgUi}};
 use crate::{
   core::*,
   modules::{
@@ -14,14 +14,17 @@ use crate::{
     steam::{build_top_query, update_playdata, update_users, At, By, Of, QueryOutput},
   },
 };
+use askama::Template;
+use futures::future::join_all;
 use poise::{
   serenity_prelude::{
-    ButtonStyle, CollectComponentInteraction, CreateActionRow, InteractionResponseType, Member,
-    ReactionType, Role, RoleId,
+    AttachmentType, ButtonStyle, CollectComponentInteraction, CreateActionRow,
+    InteractionResponseType, Member, ReactionType, Role, RoleId,
   },
   Event,
 };
 use sea_query::Query;
+use std::path::Path;
 use tokio_cron_scheduler::Job;
 
 pub struct Steam;
@@ -31,6 +34,7 @@ once_cell!(sapi_key, APIKEY: String);
 impl Module for Steam {
   fn init(&mut self, fw: &mut Framework) -> R {
     APIKEY.set(expect_env!("STEAMAPI_KEY"))?;
+    fw.req_module::<SvgUi>()?;
     fw.req_module::<Postgres>()?;
     let poise = fw.req_module::<Poise>()?;
     poise.commands.push(steam());
@@ -209,8 +213,19 @@ mod guild {
     handle(ctx, title, of.into(), by, At::Guild(guild.parse::<i64>()?)).await
   }
 }
-const SIZE: u64 = 15;
+const SIZE: u64 = 10;
 const PAGES: u64 = 100; //todo
+
+#[derive(Template, Clone)]
+#[template(path = "svgui/top.svg", escape = "html")]
+pub struct TestUI {
+  //pub title: &'a String,
+  //pub appid: i32,
+  pub data: Vec<QueryOutput>,
+  //pub total: i32,
+  pub page: u64,
+  pub pages: u64,
+}
 
 async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
   let mut msg = ctx
@@ -230,7 +245,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
   let divider = if let By::Playtime = by { 60 } else { 1 };
   let qb = build_top_query(of, by, at);
 
-  let get_page = async move |page: u64| -> Res<String> {
+  let get_page = async move |page: u64| -> Res<Vec<u8>> {
     let mut pb = qb.clone();
     if page == 0 {
       pb.limit(SIZE + 1);
@@ -239,17 +254,31 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
       pb.offset(page * SIZE - 1);
     }
     let data = fetch_all!(&pb, QueryOutput)?;
-    let mut output = String::new();
-    for (i, d) in data.iter().enumerate() {
-      if i == SIZE as usize && page == 0 || i == SIZE as usize + 1 && page != 0 {
-        output += "-------------------\n"
-      }
-      output += &format!("{} | {} | {}\n", d.row_num, d.sum_count / divider, d.name);
-      if i == 0 && page != 0 {
-        output += "-------------------\n"
-      } 
-    }
-    Ok(output)
+
+    join_all(
+      data
+        .iter()
+        .map(|i| fetch_asset(i.id as u32, "library_600x900")),
+    )
+    .await;
+
+    //let mut output = String::new();
+    //for (i, d) in data.iter().enumerate() {
+    //  if i == SIZE as usize && page == 0 || i == SIZE as usize + 1 && page != 0 {
+    //    output += "-------------------\n"
+    //  }
+    //  output += &format!("{} | {} | {}\n", d.row_num, d.sum_count / divider, d.name);
+    //  if i == 0 && page != 0 {
+    //    output += "-------------------\n"
+    //  }
+    //}
+
+    render_svg(TestUI {
+      data,
+      page,
+      pages: PAGES,
+    })
+    .await
   };
 
   let mut page = 0;
@@ -257,7 +286,11 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
 
   msg
     .edit(ctx, |b| {
-      b.content(format!("{input}\n```\n# | {bys} | name \n{firstpage}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", ctx.locale().unwrap_or("none")))
+      b.remove_all_attachments()
+        .attachment(AttachmentType::Bytes {
+          data: firstpage.into(),
+          filename: "page.webp".to_owned(),
+        })
         .components(|b| {
           b.create_action_row(|b| pagination_buttons(b, page, PAGES, false, "".into()))
         })
@@ -295,7 +328,11 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
     let mut msg = press.get_interaction_response(ctx).await?;
     msg
       .edit(ctx, |b| {
-        b.content(format!("{input}\n```\n# | {bys} | name \n{pageee}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", ctx.locale().unwrap_or("none")))
+        b.remove_all_attachments()
+          .attachment(AttachmentType::Bytes {
+            data: pageee.into(),
+            filename: "page.webp".to_owned(),
+          })
           .components(|b| {
             b.create_action_row(|b| {
               pagination_buttons(b, page, PAGES, false, press.data.custom_id.clone())
@@ -361,4 +398,21 @@ fn pagination_buttons(
   });
 
   b
+}
+
+pub async fn fetch_asset<'a>(appid: u32, asset: &'a str) -> R {
+  let name = format!(".cache/steam/{}/{}.jpg", asset, appid);
+  let path = Path::new(&name);
+  std::fs::create_dir_all(format!(".cache/steam/{}", asset))?;
+  if !path.exists() {
+    let req = reqwest::get(format!(
+      "https://cdn.cloudflare.steamstatic.com/steam/apps/{}/{}.jpg",
+      appid, asset
+    ))
+    .await?;
+    if req.status() == 200 {
+      std::fs::write(path, Into::<Vec<u8>>::into(req.bytes().await?))?;
+    }
+  }
+  Ok(())
 }

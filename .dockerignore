@@ -1,5 +1,6 @@
-,vscode
+.vscode
 .dockerignore
 .gitignore
 Dockerfile
 rustfmt.toml
+.cache

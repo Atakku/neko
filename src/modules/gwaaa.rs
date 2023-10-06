@@ -289,7 +289,7 @@ async fn callback_discord(
     return Ok(StatusCode::IM_A_TEAPOT.into_response());
   }
   let form_str = serde_urlencoded::to_string(&DiscordTokenReq {
-    client_id: &"1064379551318278204",
+    client_id: &expect_env!("OAUTH_DISCORD_ID"),
     client_secret: &expect_env!("OAUTH_DISCORD_SECRET"),
     grant_type: &"authorization_code",
     code: &cb.code,

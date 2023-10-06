@@ -15,7 +15,6 @@ module!(
   fn init(fw) {
     runtime!(fw, |m| {
       POOL.set(m.options.connect(&m.db_url).await?)?;
-      #[cfg(not(debug_assertions))]  
       sqlx::migrate!("./sql").run(db()).await.unwrap();
       Ok(None)
     });

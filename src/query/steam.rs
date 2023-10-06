@@ -252,7 +252,7 @@ fn member_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
   );
 }
 
-#[derive(FromRow)]
+#[derive(FromRow, Clone)]
 pub struct QueryOutput {
   pub row_num: i64,
   pub sum_count: i64,

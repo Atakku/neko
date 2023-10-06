@@ -1,0 +1,11 @@
+{% let vw = 1375 %} <!-- 550 * 2.5 -->
+{% let vh = 875 %}  <!-- 350 * 2.5 -->
+{% let vo = 250 %}
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="{{vo}} 0 {{vw}} {{vh}}" font-family="Monocraft Nerd Font">
+  <defs>
+    {% block defs %}{% endblock %}
+  </defs>
+  <!--<rect x="{{vo}}" y="0" width="{{vw}}" height="{{vh}}" fill="none" stroke="red" stroke-width="2"/>-->
+  {% block content %}{% endblock %}
+</svg>

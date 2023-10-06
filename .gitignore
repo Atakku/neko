@@ -17,3 +17,4 @@ Cargo.lock
 *.sql
 TODO.md
 test.bat
+.cache

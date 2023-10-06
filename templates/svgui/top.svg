@@ -1,0 +1,44 @@
+{% extends "base.svg" %}
+
+{% macro poster(i, r) %}
+  {% let w = 200 %}
+  {% let h = 300 %}
+  {% let brdr = 4 %}
+  {% let pad = 21 %}
+  {% let th = 25 %}
+  {% let x = vo - w + (w/2 + pad) * i %}
+  {% if i % 2 == 0 %}
+    {% let y = vh/2 - h - pad %}
+    <rect x="{{x-brdr}}" y="{{y-brdr - th}}" width="{{w+brdr*2}}" height="{{h+brdr*3 + th}}" fill="#000000" opacity="50%"/>
+    <image x="{{x}}" y="{{y - th}}" width="{{w}}" height="{{h}}" xlink:href=".cache/steam/library_600x900/{{r.id}}.jpg"/>
+    <!--<rect x="{{x}}" y="{{y+brdr - th + h}}" width="{{w}}" height="{{th}}" fill="#00FFFF" opacity="50%"/>-->
+    <text x="{{x}}" y="{{y+brdr + h}}" text-anchor="start" font-size="{{th/5*6}}" fill="#FFFFFF">#{{r.row_num}}</text>
+    <text x="{{x + w}}" y="{{y+brdr + h}}" text-anchor="end" font-size="{{th/5*6}}" fill="#FFFFFF">{{r.sum_count/60}}</text>
+  {% else -%}
+    {% let y = vh/2 + pad %}
+    <rect x="{{x-brdr}}" y="{{y-brdr*2}}" width="{{w+brdr*2}}" height="{{h+brdr*3 + th}}" fill="#000000" opacity="50%"/>
+    <image x="{{x}}" y="{{y + th}}" width="{{w}}" height="{{h}}" xlink:href=".cache/steam/library_600x900/{{r.id}}.jpg"/>
+    <!--<rect x="{{x}}" y="{{y-brdr}}" width="{{w}}" height="{{th}}" fill="#00FFFF" opacity="50%"/>-->
+    <text x="{{x}}" y="{{y-brdr}}" dominant-baseline="hanging" text-anchor="start" font-size="{{th/5*6}}" fill="#FFFFFF">#{{r.row_num}}</text>
+    <text x="{{x + w}}" y="{{y-brdr}}" dominant-baseline="hanging" text-anchor="end" font-size="{{th/5*6}}" fill="#FFFFFF">{{r.sum_count/60}}</text>
+  {% endif -%}
+{% endmacro %}
+
+
+{% block defs %}
+  <defs>
+    <clipPath id="cut-off-bottom">
+      <rect x="0" y="0" width="200" height="100" />
+    </clipPath>
+  </defs>
+{% endblock %}
+
+{% block content %}
+  {% for row in data %}
+    {% if page == 0 -%}
+      {% call poster(loop.index + 1, row) %}
+    {% else -%}
+      {% call poster(loop.index, row) %}
+    {% endif -%}
+  {% endfor %}
+{% endblock %}
