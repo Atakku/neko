@@ -230,10 +230,10 @@ async fn callback_steam(
   Ok(Redirect::to("/settings").into_response())
 }
 
-once_cell!(root_domain, ROOT_DOMAIN: String, {expect_env!("ROOT_DOMAIN")});
+once_cell!(root_domain, ROOT_DOMAIN: String, {env!("ROOT_DOMAIN")});
 
-once_cell!(oauth_discord_id, OAUTH_DISCORD_ID: String, {expect_env!("OAUTH_DISCORD_ID")});
-once_cell!(oauth_discord_secret, OAUTH_DISCORD_SECRET: String, {expect_env!("OAUTH_DISCORD_SECRET")});
+once_cell!(oauth_discord_id, OAUTH_DISCORD_ID: String, {env!("OAUTH_DISCORD_ID")});
+once_cell!(oauth_discord_secret, OAUTH_DISCORD_SECRET: String, {env!("OAUTH_DISCORD_SECRET")});
 once_cell!(redirect_discord, REDIRECT_DISCORD: String, {
   let cb = format!("{}/callback/discord", root_domain().await);
   format!("https://discord.com/oauth2/authorize\
@@ -242,8 +242,8 @@ once_cell!(redirect_discord, REDIRECT_DISCORD: String, {
   oauth_discord_id().await, urlencoding::encode(&cb))
 });
 
-once_cell!(oauth_github_id, OAUTH_GITHUB_ID: String, {expect_env!("OAUTH_GITHUB_ID")});
-once_cell!(oauth_github_secret, OAUTH_GITHUB_SECRET: String, {expect_env!("OAUTH_GITHUB_SECRET")});
+once_cell!(oauth_github_id, OAUTH_GITHUB_ID: String, {env!("OAUTH_GITHUB_ID")});
+once_cell!(oauth_github_secret, OAUTH_GITHUB_SECRET: String, {env!("OAUTH_GITHUB_SECRET")});
 
 once_cell!(redirect_github, REDIRECT_GITHUB: String, {
   let cb = format!("{}/callback/github", root_domain().await);
@@ -261,8 +261,8 @@ once_cell!(tokenreq_github, TOKENREQ_GITHUB: String, {
   urlencoding::encode(&cb))
 });
 
-once_cell!(oauth_anilist_id, OAUTH_ANILIST_ID: String, {expect_env!("OAUTH_ANILIST_ID")});
-once_cell!(oauth_anilist_secret, OAUTH_ANILIST_SECRET: String, {expect_env!("OAUTH_ANILIST_SECRET")});
+once_cell!(oauth_anilist_id, OAUTH_ANILIST_ID: String, {env!("OAUTH_ANILIST_ID")});
+once_cell!(oauth_anilist_secret, OAUTH_ANILIST_SECRET: String, {env!("OAUTH_ANILIST_SECRET")});
 
 once_cell!(redirect_anilist, REDIRECT_ANILIST: String, {
   let cb = format!("{}/callback/anilist", root_domain().await);
@@ -291,8 +291,8 @@ async fn callback_discord(
     return Ok(StatusCode::IM_A_TEAPOT.into_response());
   }
   let form_str = serde_urlencoded::to_string(&DiscordTokenReq {
-    client_id: &expect_env!("OAUTH_DISCORD_ID"),
-    client_secret: &expect_env!("OAUTH_DISCORD_SECRET"),
+    client_id: &env!("OAUTH_DISCORD_ID"),
+    client_secret: &env!("OAUTH_DISCORD_SECRET"),
     grant_type: &"authorization_code",
     code: &cb.code,
     redirect_uri: &format!("{}/callback/discord", root_domain().await),

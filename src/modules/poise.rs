@@ -24,7 +24,7 @@ pub type EventHandler = for<'a> fn(&'a SCtx, &'a Event<'a>) -> BoxFuture<'a, R>;
 
 module!(
   Poise {
-    token: String = expect_env!("DISCORD_TOKEN"),
+    token: String = env!("DISCORD_TOKEN"),
     intents: GatewayIntents = GatewayIntents::GUILD_MESSAGES,
     commands: Vec<Cmd> = vec![],
     event_handlers: Vec<EventHandler> = vec![],

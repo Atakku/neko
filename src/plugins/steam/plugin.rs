@@ -40,7 +40,7 @@ once_cell!(sapi_key, APIKEY: String);
 
 impl Module for Steam {
   fn init(&mut self, fw: &mut Framework) -> R {
-    APIKEY.set(expect_env!("STEAMAPI_KEY"))?;
+    APIKEY.set(env!("STEAMAPI_KEY"))?;
     fw.req_module::<SvgUi>()?;
     fw.req_module::<Postgres>()?;
     let poise = fw.req_module::<Poise>()?;

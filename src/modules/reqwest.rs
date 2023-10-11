@@ -8,7 +8,7 @@ once_cell!(req, CLIENT: Client);
 
 module!(
   Reqwest {
-    user_agent: String = default_env!("USER_AGENT", "neko.rs"),
+    user_agent: String = env!("USER_AGENT", "neko.rs"),
   }
 
   fn init(fw) {

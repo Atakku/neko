@@ -8,7 +8,7 @@ once_cell!(db, POOL: PgPool);
 
 module!(
   Postgres {
-    db_url: String = expect_env!("DATABASE_URL"),
+    db_url: String = env!("DATABASE_URL"),
     options: PgPoolOptions = PgPoolOptions::new(),
   }
 

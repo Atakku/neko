@@ -7,7 +7,6 @@ use axum::{Router, Server};
 use futures::future::BoxFuture;
 use std::net::Ipv4Addr;
 
-
 module!(
   Axum {
     routes: Vec<fn(Router) -> BoxFuture<'static, Res<Router>>> = vec![],

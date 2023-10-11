@@ -4,12 +4,10 @@
 
 #![allow(unused_macros)]
 
-macro_rules! expect_env {
+macro_rules! env {
   ($env:literal) => {
     std::env::var($env).expect(concat!($env, " is not present").into())
   };
-}
-macro_rules! default_env {
   ($env:literal, $default:literal) => {
     std::env::var($env).unwrap_or($default.into())
   };
