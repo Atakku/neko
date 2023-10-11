@@ -33,6 +33,7 @@ pub mod modules {
   pub mod fluent;
   pub mod poise;
   pub mod reqwest;
+  #[macro_use]
   pub mod sqlx;
   pub mod svgui;
 }

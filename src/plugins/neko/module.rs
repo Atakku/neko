@@ -124,17 +124,17 @@ async fn metrics() -> String {
   use crate::plugins::steam::schema::*;
 
   let mut qb = Query::select();
-  qb.from(Apps::Table);
-  qb.from(Users::Table);
-  qb.from(Playdata::Table);
-  qb.and_where(ex_col!(Playdata, AppId).equals(col!(Apps, Id)));
-  qb.and_where(ex_col!(Playdata, UserId).equals(col!(Users, Id)));
-  qb.column(col!(Users, Name));
+  qb.from(SteamApps::Table);
+  qb.from(SteamUsers::Table);
+  qb.from(SteamPlaydata::Table);
+  qb.and_where(ex_col!(SteamPlaydata, AppId).equals(col!(SteamApps, Id)));
+  qb.and_where(ex_col!(SteamPlaydata, UserId).equals(col!(SteamUsers, Id)));
+  qb.column(col!(SteamUsers, Name));
   qb.expr_as(
-    Func::sum(ex_col!(Playdata, Playtime)),
+    Func::sum(ex_col!(SteamPlaydata, Playtime)),
     Alias::new("sum_count"),
   );
-  qb.group_by_col(col!(Users, Id));
+  qb.group_by_col(col!(SteamUsers, Id));
   match sql!(FetchAll, &qb, (String, i64)) {
     Ok(data) => {
       for (u, p) in data {
@@ -213,7 +213,7 @@ async fn callback_steam(
 
   let captures = sid_regex().captures(&validate.claimed_id).unwrap();
   let steam_id = captures.get(1).unwrap().as_str().parse::<i64>().unwrap();
-  use crate::plugins::neko::schema::UsersSteam::*;
+  use crate::plugins::neko::schema::NekoUsersSteam::*;
   let mut qb = InsertStatement::new();
   qb.into_table(Table);
   qb.columns([NekoId, SteamId]);
@@ -326,15 +326,15 @@ async fn callback_discord(
 
   let id = match session.get::<i32>("neko_id") {
     None => {
-      use crate::plugins::neko::schema::UsersDiscord;
+      use crate::plugins::neko::schema::NekoUsersDiscord;
       let mut qb = SelectStatement::new();
-      qb.from(UsersDiscord::Table);
-      qb.column(UsersDiscord::NekoId);
-      qb.and_where(ex_col!(UsersDiscord, DiscordId).eq(did));
+      qb.from(NekoUsersDiscord::Table);
+      qb.column(NekoUsersDiscord::NekoId);
+      qb.and_where(ex_col!(NekoUsersDiscord, DiscordId).eq(did));
       let newid = match sql!(FetchOpt, &qb, (i32,)).unwrap() {
         Some(id) => id.0,
         None => {
-          use crate::plugins::neko::schema::Users::*;
+          use crate::plugins::neko::schema::NekoUsers::*;
           let mut qb = InsertStatement::new();
           qb.into_table(Table);
           qb.columns([Slug]);
@@ -348,7 +348,7 @@ async fn callback_discord(
     }
     Some(id) => id,
   };
-  use crate::plugins::neko::schema::UsersDiscord::*;
+  use crate::plugins::neko::schema::NekoUsersDiscord::*;
   let mut qb = InsertStatement::new();
   qb.into_table(Table);
   qb.columns([NekoId, DiscordId]);
@@ -398,7 +398,7 @@ async fn callback_github(
     .unwrap();
 
   let gid = response.id;
-  use crate::plugins::neko::schema::UsersGithub::*;
+  use crate::plugins::neko::schema::NekoUsersGithub::*;
   let mut qb = InsertStatement::new();
   qb.into_table(Table);
   qb.columns([NekoId, GithubId]);
@@ -455,7 +455,7 @@ async fn callback_anilist(
     .await
     .unwrap();
   let gid = response.data.viewer.id;
-  use crate::plugins::neko::schema::UsersAnilist::*;
+  use crate::plugins::neko::schema::NekoUsersAnilist::*;
   let mut qb = InsertStatement::new();
   qb.into_table(Table);
   qb.columns([NekoId, AnilistId]);

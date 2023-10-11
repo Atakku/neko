@@ -4,27 +4,28 @@
 
 schema! {
   #[table("steam_users")]
-  pub enum Users {
+  pub enum SteamUsers {
     Id, Name, Avatar, LastOnline,
   }
 
   #[table("steam_apps")]
-  pub enum Apps {
+  pub enum SteamApps {
     Id, Name,
   }
 
   #[table("steam_playdata")]
-  pub enum Playdata {
+  pub enum SteamPlaydata {
     Id, UserId, AppId, Playtime,
   }
 
-  #[table("steam_playdata_history")]
-  pub enum PlaydataHistory {
+  #[table("steam_playhist")]
+  pub enum SteamPlayhist {
     PlaydataId, UtcDay, Playtime,
   }
 
+  // TODO: Move to discord? or separate
   #[table("steam_discord_roles")]
-  pub enum DiscordRoles {
+  pub enum SteamDiscordRoles {
     GuildId, RoleId, AppId,
   }
 }

@@ -26,7 +26,7 @@ use sea_query::Query;
 use std::path::Path;
 use tokio_cron_scheduler::Job;
 
-autocomplete!(steam_apps, crate::plugins::steam::schema::Apps);
+autocomplete!(steam_apps, crate::plugins::steam::schema::SteamApps);
 
 once_cell!(sapi_key, APIKEY: String);
 
@@ -72,23 +72,23 @@ fn roles() -> EventHandler {
 pub async fn get_roles(m: &Member) -> Res<Vec<RoleId>> {
   use crate::plugins::*;
   let mut qb = Query::select();
-  qb.from(steam::schema::DiscordRoles::Table);
-  qb.from(steam::schema::Playdata::Table);
-  qb.from(neko::schema::UsersSteam::Table);
-  qb.from(neko::schema::UsersDiscord::Table);
-  qb.column(col!(steam::schema::DiscordRoles, RoleId));
+  qb.from(steam::schema::SteamDiscordRoles::Table);
+  qb.from(steam::schema::SteamPlaydata::Table);
+  qb.from(neko::schema::NekoUsersSteam::Table);
+  qb.from(neko::schema::NekoUsersDiscord::Table);
+  qb.column(col!(steam::schema::SteamDiscordRoles, RoleId));
 
-  qb.cond_where(ex_col!(steam::schema::DiscordRoles, GuildId).eq(m.guild_id.0 as i64));
+  qb.cond_where(ex_col!(steam::schema::SteamDiscordRoles, GuildId).eq(m.guild_id.0 as i64));
   qb.cond_where(
-    ex_col!(steam::schema::DiscordRoles, AppId).equals(col!(steam::schema::Playdata, AppId)),
+    ex_col!(steam::schema::SteamDiscordRoles, AppId).equals(col!(steam::schema::SteamPlaydata, AppId)),
   );
   qb.cond_where(
-    ex_col!(neko::schema::UsersSteam, SteamId).equals(col!(steam::schema::Playdata, UserId)),
+    ex_col!(neko::schema::NekoUsersSteam, SteamId).equals(col!(steam::schema::SteamPlaydata, UserId)),
   );
   qb.cond_where(
-    ex_col!(neko::schema::UsersSteam, NekoId).equals(col!(neko::schema::UsersDiscord, NekoId)),
+    ex_col!(neko::schema::NekoUsersSteam, NekoId).equals(col!(neko::schema::NekoUsersDiscord, NekoId)),
   );
-  qb.cond_where(ex_col!(neko::schema::UsersDiscord, DiscordId).eq(m.user.id.0 as i64));
+  qb.cond_where(ex_col!(neko::schema::NekoUsersDiscord, DiscordId).eq(m.user.id.0 as i64));
   qb.distinct();
   Ok(
     sql!(FetchAll, &qb, (i64,))?

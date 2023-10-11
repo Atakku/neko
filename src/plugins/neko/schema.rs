@@ -4,37 +4,37 @@
 
 schema! {
   #[table("neko_users")]
-  pub enum Users {
+  pub enum NekoUsers {
     NekoId, Slug
   }
 
   #[table("neko_users_discord")]
-  pub enum UsersDiscord {
+  pub enum NekoUsersDiscord {
     NekoId, DiscordId
   }
 
   #[table("neko_users_steam")]
-  pub enum UsersSteam {
+  pub enum NekoUsersSteam {
     NekoId, SteamId
   }
 
   #[table("neko_users_github")]
-  pub enum UsersGithub {
+  pub enum NekoUsersGithub {
     NekoId, GithubId
   }
 
   #[table("neko_users_anilist")]
-  pub enum UsersAnilist {
+  pub enum NekoUsersAnilist {
     NekoId, AnilistId
   }
 
   #[table("neko_users_telegram")]
-  pub enum UsersTelegram {
+  pub enum NekoUsersTelegram {
     NekoId, TelegramId
   }
 
   #[table("neko_whitelist_discord")]
-  pub enum WhitelistDiscord {
+  pub enum NekoWhitelistDiscord {
     GuildId
   }
 }

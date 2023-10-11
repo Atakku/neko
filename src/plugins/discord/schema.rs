@@ -4,17 +4,17 @@
 
 schema! {
   #[table("discord_guilds")]
-  pub enum Guilds {
+  pub enum DiscordGuilds {
     Id, Name, Icon,
   }
 
   #[table("discord_users")]
-  pub enum Users {
+  pub enum DiscordUsers {
     Id, Name, Nick, Avatar,
   }
 
   #[table("discord_members")]
-  pub enum Members {
+  pub enum DiscordMembers {
     GuildId, UserId, Nick, Avatar,
   }
 }

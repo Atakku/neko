@@ -7,7 +7,7 @@ use sea_query::Query;
 
 pub async fn all_steam_connections() -> Res<Vec<(i64,)>> {
   let mut qb = Query::select();
-  qb.from(UsersSteam::Table);
-  qb.column(UsersSteam::SteamId);
+  qb.from(NekoUsersSteam::Table);
+  qb.column(NekoUsersSteam::SteamId);
   Ok(sql!(FetchAll, &qb, (i64,))?)
 }

@@ -14,7 +14,7 @@ use sqlx::FromRow;
 use std::collections::HashMap;
 
 pub async fn update_apps() -> R {
-  use super::schema::Apps::*;
+  use super::schema::SteamApps::*;
   log::info!("Updating Steam apps");
   let apps = req().get_app_list().await?.applist.apps;
   for apps_chunk in apps.chunks(10000) {
@@ -56,7 +56,7 @@ pub async fn update_users(user_list: &Vec<(i64,)>) -> R {
     }
   }
   for chunk in profiles.chunks(10000) {
-    use super::schema::Users::*;
+    use super::schema::SteamUsers::*;
     let mut qb = Query::insert();
     qb.into_table(Table);
     qb.columns([Id, Name]);
@@ -90,7 +90,7 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
     }
   }
   for chunk in games.into_iter().collect::<Vec<_>>().chunks(10000) {
-    use super::schema::Apps::*;
+    use super::schema::SteamApps::*;
     let mut qb = Query::insert();
     qb.into_table(Table);
     qb.columns([Id, Name]);
@@ -103,7 +103,7 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
   }
   for chunk in playdata.chunks(10000) {
     let updates = {
-      use super::schema::Playdata::*;
+      use super::schema::SteamPlaydata::*;
       let mut qb = Query::insert();
       qb.into_table(Table);
       qb.columns([UserId, AppId, Playtime]);
@@ -120,7 +120,7 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
     };
     log::trace!("Updated {} playdata rows", chunk.len());
     {
-      use super::schema::PlaydataHistory::*;
+      use super::schema::SteamPlayhist::*;
       let mut qb = Query::insert();
       qb.into_table(Table);
       qb.columns([PlaydataId, UtcDay, Playtime]);
@@ -163,39 +163,39 @@ pub enum Of {
 // Top of (Apps, Guilds, Users) by (Playtime, Ownership) at (User, Guild, App, Global)
 pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
   let mut qb = Query::select();
-  qb.from(super::schema::Playdata::Table);
+  qb.from(super::schema::SteamPlaydata::Table);
   nekoid_eq(&mut qb, &of, &at);
   member_eq(&mut qb, &of, &at);
   match of {
     Of::Apps => {
-      use super::schema::{Apps, Playdata};
-      qb.from(Apps::Table);
-      qb.and_where(ex_col!(Apps, Id).equals(col!(Playdata, AppId)));
-      qb.group_by_col(col!(Apps, Id));
-      qb.columns([col!(Apps, Id), col!(Apps, Name)]);
+      use super::schema::{SteamApps, SteamPlaydata};
+      qb.from(SteamApps::Table);
+      qb.and_where(ex_col!(SteamApps, Id).equals(col!(SteamPlaydata, AppId)));
+      qb.group_by_col(col!(SteamApps, Id));
+      qb.columns([col!(SteamApps, Id), col!(SteamApps, Name)]);
     }
     Of::Guilds => {
-      use discord::schema::{Guilds, Members};
-      qb.from(Guilds::Table);
-      qb.and_where(ex_col!(Guilds, Id).equals(col!(Members, GuildId)));
-      qb.group_by_col(col!(Guilds, Id));
-      qb.columns([col!(Guilds, Id), col!(Guilds, Name)]);
+      use discord::schema::{DiscordGuilds, DiscordMembers};
+      qb.from(DiscordGuilds::Table);
+      qb.and_where(ex_col!(DiscordGuilds, Id).equals(col!(DiscordMembers, GuildId)));
+      qb.group_by_col(col!(DiscordGuilds, Id));
+      qb.columns([col!(DiscordGuilds, Id), col!(DiscordGuilds, Name)]);
     }
     Of::Users => {
-      use discord::schema::Users;
-      use neko::schema::UsersDiscord;
-      qb.from(Users::Table);
-      qb.and_where(ex_col!(Users, Id).equals(col!(UsersDiscord, DiscordId)));
-      qb.group_by_col(col!(Users, Id));
-      qb.columns([col!(Users, Id), col!(Users, Name)]);
+      use discord::schema::DiscordUsers;
+      use neko::schema::NekoUsersDiscord;
+      qb.from(DiscordUsers::Table);
+      qb.and_where(ex_col!(DiscordUsers, Id).equals(col!(NekoUsersDiscord, DiscordId)));
+      qb.group_by_col(col!(DiscordUsers, Id));
+      qb.columns([col!(DiscordUsers, Id), col!(DiscordUsers, Name)]);
     }
   }
   {
-    use steam::schema::Playdata;
+    use steam::schema::SteamPlaydata;
     qb.expr_as(
       match by {
-        By::Playtime => Func::sum(ex_col!(Playdata, Playtime)),
-        By::Ownership => Func::count(ex_col!(Playdata, AppId)),
+        By::Playtime => Func::sum(ex_col!(SteamPlaydata, Playtime)),
+        By::Ownership => Func::count(ex_col!(SteamPlaydata, AppId)),
       },
       Alias::new("sum_count"),
     );
@@ -204,8 +204,8 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
       WindowStatement::new()
         .order_by_expr(
           match by {
-            By::Playtime => Expr::sum(ex_col!(Playdata, Playtime)),
-            By::Ownership => Expr::count(ex_col!(Playdata, AppId)),
+            By::Playtime => Expr::sum(ex_col!(SteamPlaydata, Playtime)),
+            By::Ownership => Expr::count(ex_col!(SteamPlaydata, AppId)),
           },
           Order::Desc,
         )
@@ -214,9 +214,9 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
     );
   }
   match at {
-    At::User(id) => qb.and_where(ex_col!(neko::schema::UsersDiscord, DiscordId).eq(id)),
-    At::Guild(id) => qb.and_where(ex_col!(discord::schema::Members, GuildId).eq(id)),
-    At::App(id) => qb.and_where(ex_col!(steam::schema::Playdata, AppId).eq(id)),
+    At::User(id) => qb.and_where(ex_col!(neko::schema::NekoUsersDiscord, DiscordId).eq(id)),
+    At::Guild(id) => qb.and_where(ex_col!(discord::schema::DiscordMembers, GuildId).eq(id)),
+    At::App(id) => qb.and_where(ex_col!(steam::schema::SteamPlaydata, AppId).eq(id)),
     At::None => &qb,
   };
   qb.order_by(Alias::new("sum_count"), Order::Desc);
@@ -230,10 +230,10 @@ fn nekoid_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
     });
   });
   use neko::schema::*;
-  qb.from(UsersSteam::Table);
-  qb.from(UsersDiscord::Table);
-  qb.and_where(ex_col!(UsersSteam, NekoId).equals(col!(UsersDiscord, NekoId)));
-  qb.and_where(ex_col!(UsersSteam, SteamId).equals(col!(steam::schema::Playdata, UserId)));
+  qb.from(NekoUsersSteam::Table);
+  qb.from(NekoUsersDiscord::Table);
+  qb.and_where(ex_col!(NekoUsersSteam, NekoId).equals(col!(NekoUsersDiscord, NekoId)));
+  qb.and_where(ex_col!(NekoUsersSteam, SteamId).equals(col!(steam::schema::SteamPlaydata, UserId)));
 }
 
 fn member_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
@@ -244,10 +244,10 @@ fn member_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
   });
   use discord::schema::*;
   use neko::schema::*;
-  qb.from(Members::Table);
+  qb.from(DiscordMembers::Table);
   qb.and_where(
-    Expr::col((Members::Table, Members::UserId))
-      .equals((UsersDiscord::Table, UsersDiscord::DiscordId)),
+    Expr::col((DiscordMembers::Table, DiscordMembers::UserId))
+      .equals((NekoUsersDiscord::Table, NekoUsersDiscord::DiscordId)),
   );
 }
 

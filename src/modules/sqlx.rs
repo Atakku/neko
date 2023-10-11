@@ -20,3 +20,25 @@ module! {
     });
   }
 }
+
+//TODO: generate init query
+/// Declare a new sea_query schema
+macro_rules! schema {
+  ($(
+    #[table($table:literal)]
+    //$(#[alias($alias:ident)])*
+    $vis:vis enum $ident:ident {
+      $($field:ident),*$(,)?
+    }
+  )*) => {
+    $(
+      #[derive(sea_query::Iden)]
+      #[iden(rename = $table)]
+      #[allow(dead_code)]
+      $vis enum $ident {
+        Table, $($field),*
+      }
+      //$(pub use $ident as $alias;)*
+    )*
+  };
+}
