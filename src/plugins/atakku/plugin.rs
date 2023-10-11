@@ -4,10 +4,9 @@
 
 use futures::StreamExt;
 
-use super::poise::Poise;
 use crate::{
   core::*,
-  modules::{poise::Ctx, steam::{minor_update, get_roles, filter_roles}},
+  modules::{poise::{Ctx, Poise}}, plugins::steam::{minor_update, filter_roles, get_roles},
 };
 
 // Util module for maintenance commands

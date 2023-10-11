@@ -8,7 +8,6 @@ use crate::{
     poise::{EventHandler, Poise},
     sqlx::Postgres,
   },
-  schema::discord::*,
 };
 use futures::StreamExt;
 use poise::{
@@ -16,6 +15,10 @@ use poise::{
   Event,
 };
 use sea_query::{Expr, OnConflict, Query};
+
+pub mod schema;
+
+autocomplete!(discord_guilds, crate::plugins::discord::schema::Guilds);
 
 /// Discord scraper module, populates the database with user data (users, guilds, members)
 pub struct Discord;
@@ -107,16 +110,16 @@ fn event_handler() -> EventHandler {
 }
 
 async fn check_guild_whitelist(id: GuildId) -> Res<bool> {
-  use crate::schema::neko::WhitelistDiscord::*;
+  use crate::plugins::neko::schema::WhitelistDiscord::*;
   let mut qb = Query::select();
   qb.from(Table);
   qb.column(GuildId);
   qb.and_where(Expr::col((Table, GuildId)).eq(id.0 as i64));
-  Ok(fetch_optional!(&qb, (i64,))?.is_some())
+  Ok(sql!(FetchOpt, &qb, (i64,))?.is_some())
 }
 
 async fn update_guild(ctx: &Context, id: GuildId) -> R {
-  use Guilds::*;
+  use schema::Guilds::*;
   log::trace!("Requesting {id} information");
   let info = id.get_preview(ctx).await?;
   log::trace!("Upserting {id} information into db");
@@ -129,33 +132,33 @@ async fn update_guild(ctx: &Context, id: GuildId) -> R {
       .to_owned(),
   );
   qb.values([info.id.0.into(), info.name.into(), info.icon.into()])?;
-  execute!(&qb)?;
+  sql!(Execute, &qb)?;
   Ok(())
 }
 
 async fn remove_guild(id: GuildId) -> R {
-  use Guilds::*;
+  use schema::Guilds::*;
   log::trace!("Removing {id} information from db");
   let mut qb = Query::delete();
   qb.from_table(Table);
   qb.cond_where(Expr::col(Id).eq(id.0));
-  execute!(&qb)?;
+  sql!(Execute, &qb)?;
   Ok(())
 }
 
 async fn prune_all_guilds() -> R {
-  use Guilds::*;
+  use schema::Guilds::*;
   log::trace!("Pruning all guilds");
   let mut qb = Query::delete();
   qb.from_table(Table);
-  execute!(&qb)?;
+  sql!(Execute, &qb)?;
   Ok(())
 }
 
 const CHUNK_SIZE: usize = 10000;
 
 async fn update_users(users: Vec<User>) -> R {
-  use Users::*;
+  use schema::Users::*;
   log::trace!("Updating {} users", users.len());
   for chunk in users.chunks(CHUNK_SIZE) {
     let mut qb = Query::insert();
@@ -176,13 +179,13 @@ async fn update_users(users: Vec<User>) -> R {
     }) {
       qb.values(row)?;
     }
-    execute!(&qb)?;
+    sql!(Execute, &qb)?;
   }
   Ok(())
 }
 
 async fn update_members(members: Vec<Member>) -> R {
-  use Members::*;
+  use schema::Members::*;
   log::trace!("Updating {} members", members.len());
   for chunk in members.chunks(CHUNK_SIZE) {
     let mut qb = Query::insert();
@@ -203,17 +206,17 @@ async fn update_members(members: Vec<Member>) -> R {
     }) {
       qb.values(row)?;
     }
-    execute!(&qb)?;
+    sql!(Execute, &qb)?;
   }
   Ok(())
 }
 
 async fn remove_member(g: GuildId, u: UserId) -> R {
-  use Members::*;
+  use schema::Members::*;
   let mut qb = Query::delete();
   qb.from_table(Table);
   qb.cond_where(Expr::col(GuildId).eq(g.0));
   qb.cond_where(Expr::col(UserId).eq(u.0));
-  execute!(&qb)?;
+  sql!(Execute, &qb)?;
   Ok(())
 }

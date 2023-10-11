@@ -4,13 +4,15 @@
 
 use crate::{
   core::*,
-  interface::drg::{DeepRockGalacticApi, Variant},
   modules::{
     poise::{Ctx, Poise},
     reqwest::{req, Reqwest},
-  },
+  }, plugins::drg::wrapper::DeepRockGalacticApi,
 };
 use std::fmt;
+
+use self::wrapper::Variant;
+pub mod wrapper;
 
 pub struct DeepRockGalactic;
 

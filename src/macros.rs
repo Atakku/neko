@@ -35,42 +35,30 @@ macro_rules! once_cell {
   };
 }
 
-macro_rules! build_sqlx {
-  ($qb:expr) => {
-    sea_query_binder::SqlxBinder::build_sqlx($qb, sea_query::PostgresQueryBuilder)
-  };
-}
-
-macro_rules! fetch_optional {
-  ( $qb:expr, $ty:ty ) => {{
-    let (q, v) = build_sqlx!($qb);
+macro_rules! sql {
+  (Prepare, $qb:expr) => {{
+    (
+      sea_query_binder::SqlxBinder::build_sqlx($qb, sea_query::PostgresQueryBuilder),
+      crate::modules::sqlx::db(),
+    )
+  }};
+  (FetchOne, $qb:expr, $ty:ty) => {{
+    let ((q, v), p) = sql!(Prepare, $qb);
+    sqlx::query_as_with::<_, $ty, _>(&q, v).fetch_one(p).await
+  }};
+  (FetchAll, $qb:expr, $ty:ty) => {{
+    let ((q, v), p) = sql!(Prepare, $qb);
+    sqlx::query_as_with::<_, $ty, _>(&q, v).fetch_all(p).await
+  }};
+  (FetchOpt, $qb:expr, $ty:ty) => {{
+    let ((q, v), p) = sql!(Prepare, $qb);
     sqlx::query_as_with::<_, $ty, _>(&q, v)
-      .fetch_optional(crate::modules::sqlx::db())
+      .fetch_optional(p)
       .await
   }};
-}
-macro_rules! fetch_one {
-  ( $qb:expr, $ty:ty ) => {{
-    let (q, v) = build_sqlx!($qb);
-    sqlx::query_as_with::<_, $ty, _>(&q, v)
-      .fetch_one(crate::modules::sqlx::db())
-      .await
-  }};
-}
-macro_rules! fetch_all {
-  ( $qb:expr, $ty:ty ) => {{
-    let (q, v) = build_sqlx!($qb);
-    sqlx::query_as_with::<_, $ty, _>(&q, v)
-      .fetch_all(crate::modules::sqlx::db())
-      .await
-  }};
-}
-macro_rules! execute {
-  ( $qb:expr ) => {{
-    let (q, v) = build_sqlx!($qb);
-    sqlx::query_with(&q, v)
-      .execute(crate::modules::sqlx::db())
-      .await
+  (Execute, $qb:expr) => {{
+    let ((q, v), p) = sql!(Prepare, $qb);
+    sqlx::query_with(&q, v).execute(p).await
   }};
 }
 
@@ -95,6 +83,52 @@ macro_rules! api {
         Ok(res.json::<$ty>().await?)
       })*
     }
+  };
+}
+
+macro_rules! autocomplete {
+  ( $fn_name:ident, $path:path) => {
+    pub async fn $fn_name<'a>(
+      _: crate::modules::poise::Ctx<'_>,
+      search: &'a str,
+    ) -> Vec<poise::AutocompleteChoice<String>> {
+      use sea_query::{Alias, Expr, Func, Order};
+      use $path::*;
+      let mut qb = sea_query::SelectStatement::new();
+      qb.from(Table);
+      qb.columns([Id, Name]);
+      qb.and_where(
+        Expr::expr(Func::lower(Expr::col(Name)))
+          .like(format!("%{}%", search.to_lowercase()))
+          .or(
+            Expr::col(Id)
+              .cast_as(Alias::new("TEXT"))
+              .like(format!("%{search}%")),
+          ),
+      );
+      qb.order_by(Name, Order::Asc);
+      qb.limit(25);
+      use unicode_truncate::UnicodeTruncateStr;
+      sql!(FetchAll, &qb, (i64, String))
+        .unwrap_or(vec![])
+        .into_iter()
+        .map(|g| poise::AutocompleteChoice {
+          value: g.0.to_string(),
+          name: g.1.unicode_truncate(100).0.into(),
+        })
+        .collect()
+    }
+  };
+}
+
+macro_rules! schema {
+  ($(#[table($table:literal)] $vis:vis enum $ident:ident {$($field:ident),*$(,)?})*) => {
+    $(#[derive(sea_query::Iden)]
+    #[iden(rename = $table)]
+    $vis enum $ident {
+      Table,
+      $($field),*
+    })*
   };
 }
 
@@ -130,7 +164,7 @@ macro_rules! module {
     }
 
     impl Default for $name {
-      fn default() -> Self { 
+      fn default() -> Self {
         Self {
           $($pn: $pd),*
         }
@@ -145,15 +179,12 @@ macro_rules! module {
     }
   };
 }
- 
 
 macro_rules! col {
-  ($path:path, $ident:ident) => {
-    {
-      use $path::*;
-      (Table, $ident)
-    }
-  };
+  ($path:path, $ident:ident) => {{
+    use $path::*;
+    (Table, $ident)
+  }};
 }
 
 macro_rules! ex_col {

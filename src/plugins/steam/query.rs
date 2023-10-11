@@ -4,10 +4,9 @@
 
 use crate::{
   core::*,
-  interface::steam::{IPlayerService, ISteamApps, ISteamUser},
-  modules::{reqwest::req, steam::sapi_key},
-  schema::*,
+  modules::{reqwest::req}, plugins::steam::{sapi_key, wrapper::{ISteamUser, IPlayerService, ISteamApps}},
 };
+use crate::plugins::*;
 use chrono::Utc;
 use poise::ChoiceParameter;
 use sea_query::{Alias, Expr, Func, OnConflict, Order, Query, SelectStatement, WindowStatement};
@@ -15,7 +14,7 @@ use sqlx::FromRow;
 use std::collections::HashMap;
 
 pub async fn update_apps() -> R {
-  use steam::Apps::*;
+  use super::schema::Apps::*;
   log::info!("Updating Steam apps");
   let apps = req().get_app_list().await?.applist.apps;
   for apps_chunk in apps.chunks(10000) {
@@ -26,7 +25,7 @@ pub async fn update_apps() -> R {
     for app in apps_chunk {
       qb.values([(app.id as i64).into(), app.name.clone().into()])?;
     }
-    execute!(&qb)?;
+    sql!(Execute, &qb)?;
     log::info!("Updated {} apps", apps_chunk.len());
   }
   log::info!("Finished updating Steam apps");
@@ -57,7 +56,7 @@ pub async fn update_users(user_list: &Vec<(i64,)>) -> R {
     }
   }
   for chunk in profiles.chunks(10000) {
-    use steam::Users::*;
+    use super::schema::Users::*;
     let mut qb = Query::insert();
     qb.into_table(Table);
     qb.columns([Id, Name]);
@@ -65,7 +64,7 @@ pub async fn update_users(user_list: &Vec<(i64,)>) -> R {
     for v in chunk {
       qb.values([v.0.into(), v.1.clone().into()])?;
     }
-    execute!(&qb)?;
+    sql!(Execute, &qb)?;
   }
   log::info!("Finished updating Steam users");
   Ok(())
@@ -91,7 +90,7 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
     }
   }
   for chunk in games.into_iter().collect::<Vec<_>>().chunks(10000) {
-    use steam::Apps::*;
+    use super::schema::Apps::*;
     let mut qb = Query::insert();
     qb.into_table(Table);
     qb.columns([Id, Name]);
@@ -99,12 +98,12 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
     for v in chunk {
       qb.values([v.0.into(), v.1.clone().into()])?;
     }
-    execute!(&qb)?;
+    sql!(Execute, &qb)?;
     log::info!("Updated {} apps", chunk.len());
   }
   for chunk in playdata.chunks(10000) {
     let updates = {
-      use steam::Playdata::*;
+      use super::schema::Playdata::*;
       let mut qb = Query::insert();
       qb.into_table(Table);
       qb.columns([UserId, AppId, Playtime]);
@@ -117,11 +116,11 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
       for v in chunk {
         qb.values([v.0.into(), v.1.into(), v.2.into()])?;
       }
-      fetch_all!(&qb, (i64, i32))?
+      sql!(FetchAll, &qb, (i64, i32))?
     };
     log::trace!("Updated {} playdata rows", chunk.len());
     {
-      use steam::PlaydataHistory::*;
+      use super::schema::PlaydataHistory::*;
       let mut qb = Query::insert();
       qb.into_table(Table);
       qb.columns([PlaydataId, UtcDay, Playtime]);
@@ -133,7 +132,7 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
       for v in updates {
         qb.values([v.0.into(), day.into(), v.1.into()])?;
       }
-      execute!(&qb)?;
+      sql!(Execute, &qb)?;
     }
     log::trace!("Updated {} playdata history rows", chunk.len());
   }
@@ -164,27 +163,27 @@ pub enum Of {
 // Top of (Apps, Guilds, Users) by (Playtime, Ownership) at (User, Guild, App, Global)
 pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
   let mut qb = Query::select();
-  qb.from(steam::Playdata::Table);
+  qb.from(super::schema::Playdata::Table);
   nekoid_eq(&mut qb, &of, &at);
   member_eq(&mut qb, &of, &at);
   match of {
     Of::Apps => {
-      use steam::{Apps, Playdata};
+      use super::schema::{Apps, Playdata};
       qb.from(Apps::Table);
       qb.and_where(ex_col!(Apps, Id).equals(col!(Playdata, AppId)));
       qb.group_by_col(col!(Apps, Id));
       qb.columns([col!(Apps, Id), col!(Apps, Name)]);
     }
     Of::Guilds => {
-      use discord::{Guilds, Members};
+      use discord::schema::{Guilds, Members};
       qb.from(Guilds::Table);
       qb.and_where(ex_col!(Guilds, Id).equals(col!(Members, GuildId)));
       qb.group_by_col(col!(Guilds, Id));
       qb.columns([col!(Guilds, Id), col!(Guilds, Name)]);
     }
     Of::Users => {
-      use discord::Users;
-      use neko::UsersDiscord;
+      use discord::schema::Users;
+      use neko::schema::UsersDiscord;
       qb.from(Users::Table);
       qb.and_where(ex_col!(Users, Id).equals(col!(UsersDiscord, DiscordId)));
       qb.group_by_col(col!(Users, Id));
@@ -192,7 +191,7 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
     }
   }
   {
-    use steam::Playdata;
+    use steam::schema::Playdata;
     qb.expr_as(
       match by {
         By::Playtime => Func::sum(ex_col!(Playdata, Playtime)),
@@ -215,9 +214,9 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
     );
   }
   match at {
-    At::User(id) => qb.and_where(ex_col!(neko::UsersDiscord, DiscordId).eq(id)),
-    At::Guild(id) => qb.and_where(ex_col!(discord::Members, GuildId).eq(id)),
-    At::App(id) => qb.and_where(ex_col!(steam::Playdata, AppId).eq(id)),
+    At::User(id) => qb.and_where(ex_col!(neko::schema::UsersDiscord, DiscordId).eq(id)),
+    At::Guild(id) => qb.and_where(ex_col!(discord::schema::Members, GuildId).eq(id)),
+    At::App(id) => qb.and_where(ex_col!(steam::schema::Playdata, AppId).eq(id)),
     At::None => &qb,
   };
   qb.order_by(Alias::new("sum_count"), Order::Desc);
@@ -230,11 +229,11 @@ fn nekoid_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
       return;
     });
   });
-  use neko::*;
+  use neko::schema::*;
   qb.from(UsersSteam::Table);
   qb.from(UsersDiscord::Table);
   qb.and_where(ex_col!(UsersSteam, NekoId).equals(col!(UsersDiscord, NekoId)));
-  qb.and_where(ex_col!(UsersSteam, SteamId).equals(col!(steam::Playdata, UserId)));
+  qb.and_where(ex_col!(UsersSteam, SteamId).equals(col!(steam::schema::Playdata, UserId)));
 }
 
 fn member_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
@@ -243,8 +242,8 @@ fn member_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
       return;
     });
   });
-  use discord::*;
-  use neko::*;
+  use discord::schema::*;
+  use neko::schema::*;
   qb.from(Members::Table);
   qb.and_where(
     Expr::col((Members::Table, Members::UserId))

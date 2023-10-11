@@ -11,15 +11,27 @@ pub mod macros;
 
 pub mod core;
 
-pub mod interface {
-  automod::dir!(pub "src/interface");
-}
 pub mod modules {
   automod::dir!(pub "src/modules");
 }
-pub mod query {
-  automod::dir!(pub "src/query");
-}
-pub mod schema {
-  automod::dir!(pub "src/schema");
+
+pub mod plugins {
+  #[path = "atakku/plugin.rs"]
+  mod atakku;
+  pub use atakku::Atakku;
+  #[path = "discord/plugin.rs"]
+  mod discord;
+  pub use discord::Discord;
+  #[path = "drg/plugin.rs"]
+  mod drg;
+  pub use drg::DeepRockGalactic;
+  #[path = "ftv/plugin.rs"]
+  mod ftv;
+  pub use ftv::FemboyTV;
+  #[path = "neko/plugin.rs"]
+  mod neko;
+  pub use neko::Gwaaa;
+  #[path = "steam/plugin.rs"]
+  mod steam;
+  pub use steam::Steam;
 }

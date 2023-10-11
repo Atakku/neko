@@ -2,16 +2,11 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use super::{cron::Cron, poise::EventHandler, svgui::{render_svg, SvgUi}};
 use crate::{
   core::*,
   modules::{
-    poise::{Ctx, Poise},
-    sqlx::Postgres,
-  },
-  query::{
-    neko::all_steam_connections,
-    steam::{build_top_query, update_playdata, update_users, At, By, Of, QueryOutput},
+    poise::{Ctx, Poise, EventHandler},
+    sqlx::Postgres, svgui::{SvgUi, render_svg}, cron::Cron,
   },
 };
 use askama::Template;
@@ -27,7 +22,19 @@ use sea_query::Query;
 use std::path::Path;
 use tokio_cron_scheduler::Job;
 
+use self::query::{build_top_query, By, Of, At, QueryOutput, update_users, update_playdata};
+
+use super::neko::query::all_steam_connections;
+
 pub struct Steam;
+
+
+pub mod schema;
+pub mod query;
+pub mod wrapper;
+
+
+autocomplete!(steam_apps, crate::plugins::steam::schema::Apps);
 
 once_cell!(sapi_key, APIKEY: String);
 
@@ -74,22 +81,22 @@ fn roles() -> EventHandler {
 }
 
 pub async fn get_roles(m: &Member) -> Res<Vec<RoleId>> {
-  use crate::schema::*;
+  use crate::plugins::*;
   let mut qb = Query::select();
-  qb.from(steam::DiscordRoles::Table);
-  qb.from(steam::Playdata::Table);
-  qb.from(neko::UsersSteam::Table);
-  qb.from(neko::UsersDiscord::Table);
-  qb.column(col!(steam::DiscordRoles, RoleId));
+  qb.from(steam::schema::DiscordRoles::Table);
+  qb.from(steam::schema::Playdata::Table);
+  qb.from(neko::schema::UsersSteam::Table);
+  qb.from(neko::schema::UsersDiscord::Table);
+  qb.column(col!(steam::schema::DiscordRoles, RoleId));
 
-  qb.cond_where(ex_col!(steam::DiscordRoles, GuildId).eq(m.guild_id.0 as i64));
-  qb.cond_where(ex_col!(steam::DiscordRoles, AppId).equals(col!(steam::Playdata, AppId)));
-  qb.cond_where(ex_col!(neko::UsersSteam, SteamId).equals(col!(steam::Playdata, UserId)));
-  qb.cond_where(ex_col!(neko::UsersSteam, NekoId).equals(col!(neko::UsersDiscord, NekoId)));
-  qb.cond_where(ex_col!(neko::UsersDiscord, DiscordId).eq(m.user.id.0 as i64));
+  qb.cond_where(ex_col!(steam::schema::DiscordRoles, GuildId).eq(m.guild_id.0 as i64));
+  qb.cond_where(ex_col!(steam::schema::DiscordRoles, AppId).equals(col!(steam::schema::Playdata, AppId)));
+  qb.cond_where(ex_col!(neko::schema::UsersSteam, SteamId).equals(col!(steam::schema::Playdata, UserId)));
+  qb.cond_where(ex_col!(neko::schema::UsersSteam, NekoId).equals(col!(neko::schema::UsersDiscord, NekoId)));
+  qb.cond_where(ex_col!(neko::schema::UsersDiscord, DiscordId).eq(m.user.id.0 as i64));
   qb.distinct();
   Ok(
-    fetch_all!(&qb, (i64,))?
+    sql!(FetchAll, &qb, (i64,))?
       .into_iter()
       .map(|r| RoleId(r.0 as u64))
       .collect(),
@@ -123,8 +130,7 @@ pub async fn top(ctx: Ctx<'_>, by: By, of: Of) -> R {
 mod user {
   use crate::{
     core::R,
-    modules::{poise::Ctx, steam::handle},
-    query::steam::{At, By, Of},
+    modules::{poise::Ctx}, plugins::steam::{handle, query::{At, Of, By}},
   };
   use poise::serenity_prelude::UserId;
 
@@ -139,13 +145,11 @@ mod user {
 mod app {
   use crate::{
     core::R,
-    modules::{poise::Ctx, steam::handle},
-    query::{
-      autocomplete::steam_apps,
-      steam::{At, By, Of},
-    },
+    modules::{poise::Ctx}, plugins::steam::{handle, query::{At, By}, steam_apps}
   };
   use poise::ChoiceParameter;
+
+use super::query::Of;
   #[derive(ChoiceParameter)]
   enum AppTop {
     Users,
@@ -170,14 +174,11 @@ mod app {
 
 mod guild {
   use crate::{
-    core::R,
-    modules::{poise::Ctx, steam::handle},
-    query::{
-      autocomplete::discord_guilds,
-      steam::{At, By, Of},
-    },
+    core::R, plugins::{steam::{query::{At, By}, handle}, discord::discord_guilds}, modules::poise::Ctx,
   };
   use poise::ChoiceParameter;
+
+use super::query::Of;
 
   #[derive(ChoiceParameter)]
   enum GuildTop {
@@ -205,7 +206,7 @@ mod guild {
     let guild = guild.unwrap_or(
       ctx
         .guild_id()
-        .unwrap_or(crate::modules::ftv::GUILD)
+        .unwrap_or(crate::plugins::ftv::GUILD)
         .0
         .to_string(),
     );
@@ -253,7 +254,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
       pb.limit(SIZE + 2);
       pb.offset(page * SIZE - 1);
     }
-    let data = fetch_all!(&pb, QueryOutput)?;
+    let data = sql!(FetchAll, &pb, QueryOutput)?;
 
     join_all(
       data
