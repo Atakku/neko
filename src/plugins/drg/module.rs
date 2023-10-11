@@ -11,8 +11,7 @@ use crate::{
 };
 use std::fmt;
 
-use self::wrapper::Variant;
-pub mod wrapper;
+use super::wrapper::Variant;
 
 pub struct DeepRockGalactic;
 

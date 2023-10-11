@@ -16,9 +16,6 @@ use reqwest::{header, StatusCode};
 use sea_query::{Alias, Func, InsertStatement, OnConflict, Query, SelectStatement};
 use url::Url;
 
-pub mod schema;
-pub mod query;
-
 async fn settings(session: SessionPgSession) -> Response {
   let Some(id) = session.get::<i32>("neko_id") else {
     return Redirect::to("/login").into_response();

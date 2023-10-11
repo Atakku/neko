@@ -29,23 +29,28 @@ pub mod modules {
   automod::dir!(pub "src/modules");
 }
 
-pub mod plugins {
-  #[path = "atakku/plugin.rs"]
-  mod atakku;
-  pub use atakku::Atakku;
-  #[path = "discord/plugin.rs"]
-  mod discord;
-  pub use discord::Discord;
-  #[path = "drg/plugin.rs"]
-  mod drg;
-  pub use drg::DeepRockGalactic;
-  #[path = "ftv/plugin.rs"]
-  mod ftv;
-  pub use ftv::FemboyTV;
-  #[path = "neko/plugin.rs"]
-  mod neko;
-  pub use neko::Gwaaa;
-  #[path = "steam/plugin.rs"]
-  mod steam;
-  pub use steam::Steam;
+
+macro_rules! plugins {
+  ($root:ident, $plugin:ident) => {
+    plugins!($root, [], $plugin);
+  };
+  ($root:ident, [$($mod:ident),*], $plugin:ident) => {
+    mod $root {
+      mod module;
+      pub use module::*;
+      $(pub mod $mod;)*
+    }
+    pub use $root::$plugin;
+  };
 }
+
+pub mod plugins {
+  plugins!(atakku, Atakku);
+  plugins!(discord, [schema], Discord);
+  plugins!(drg, [wrapper], DeepRockGalactic);
+  plugins!(ftv, FemboyTV);
+  plugins!(neko, [query, schema], Gwaaa);
+  plugins!(steam, [query, schema, wrapper], Steam);
+}
+
+

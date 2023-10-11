@@ -22,17 +22,11 @@ use sea_query::Query;
 use std::path::Path;
 use tokio_cron_scheduler::Job;
 
-use self::query::{build_top_query, By, Of, At, QueryOutput, update_users, update_playdata};
+use super::query::{build_top_query, By, Of, At, QueryOutput, update_users, update_playdata};
 
-use super::neko::query::all_steam_connections;
+use crate::plugins::neko::query::all_steam_connections;
 
 pub struct Steam;
-
-
-pub mod schema;
-pub mod query;
-pub mod wrapper;
-
 
 autocomplete!(steam_apps, crate::plugins::steam::schema::Apps);
 
@@ -130,7 +124,7 @@ pub async fn top(ctx: Ctx<'_>, by: By, of: Of) -> R {
 mod user {
   use crate::{
     core::R,
-    modules::{poise::Ctx}, plugins::steam::{handle, query::{At, Of, By}},
+    modules::{poise::Ctx}, plugins::steam::{query::{At, Of, By}, module::handle},
   };
   use poise::serenity_prelude::UserId;
 
@@ -145,11 +139,11 @@ mod user {
 mod app {
   use crate::{
     core::R,
-    modules::{poise::Ctx}, plugins::steam::{handle, query::{At, By}, steam_apps}
+    modules::{poise::Ctx}, plugins::steam::{query::{At, By, self}, steam_apps, module::handle}
   };
   use poise::ChoiceParameter;
 
-use super::query::Of;
+use query::Of;
   #[derive(ChoiceParameter)]
   enum AppTop {
     Users,
@@ -174,11 +168,11 @@ use super::query::Of;
 
 mod guild {
   use crate::{
-    core::R, plugins::{steam::{query::{At, By}, handle}, discord::discord_guilds}, modules::poise::Ctx,
+    core::R, plugins::{steam::{query::{At, By, self}, module::handle}, discord::discord_guilds}, modules::poise::Ctx,
   };
   use poise::ChoiceParameter;
 
-use super::query::Of;
+use query::Of;
 
   #[derive(ChoiceParameter)]
   enum GuildTop {

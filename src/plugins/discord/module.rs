@@ -16,8 +16,6 @@ use poise::{
 };
 use sea_query::{Expr, OnConflict, Query};
 
-pub mod schema;
-
 autocomplete!(discord_guilds, crate::plugins::discord::schema::Guilds);
 
 /// Discord scraper module, populates the database with user data (users, guilds, members)
@@ -119,7 +117,7 @@ async fn check_guild_whitelist(id: GuildId) -> Res<bool> {
 }
 
 async fn update_guild(ctx: &Context, id: GuildId) -> R {
-  use schema::Guilds::*;
+  use super::schema::Guilds::*;
   log::trace!("Requesting {id} information");
   let info = id.get_preview(ctx).await?;
   log::trace!("Upserting {id} information into db");
@@ -137,7 +135,7 @@ async fn update_guild(ctx: &Context, id: GuildId) -> R {
 }
 
 async fn remove_guild(id: GuildId) -> R {
-  use schema::Guilds::*;
+  use super::schema::Guilds::*;
   log::trace!("Removing {id} information from db");
   let mut qb = Query::delete();
   qb.from_table(Table);
@@ -147,7 +145,7 @@ async fn remove_guild(id: GuildId) -> R {
 }
 
 async fn prune_all_guilds() -> R {
-  use schema::Guilds::*;
+  use super::schema::Guilds::*;
   log::trace!("Pruning all guilds");
   let mut qb = Query::delete();
   qb.from_table(Table);
@@ -158,7 +156,7 @@ async fn prune_all_guilds() -> R {
 const CHUNK_SIZE: usize = 10000;
 
 async fn update_users(users: Vec<User>) -> R {
-  use schema::Users::*;
+  use super::schema::Users::*;
   log::trace!("Updating {} users", users.len());
   for chunk in users.chunks(CHUNK_SIZE) {
     let mut qb = Query::insert();
@@ -185,7 +183,7 @@ async fn update_users(users: Vec<User>) -> R {
 }
 
 async fn update_members(members: Vec<Member>) -> R {
-  use schema::Members::*;
+  use super::schema::Members::*;
   log::trace!("Updating {} members", members.len());
   for chunk in members.chunks(CHUNK_SIZE) {
     let mut qb = Query::insert();
@@ -212,7 +210,7 @@ async fn update_members(members: Vec<Member>) -> R {
 }
 
 async fn remove_member(g: GuildId, u: UserId) -> R {
-  use schema::Members::*;
+  use super::schema::Members::*;
   let mut qb = Query::delete();
   qb.from_table(Table);
   qb.cond_where(Expr::col(GuildId).eq(g.0));
