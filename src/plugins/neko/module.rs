@@ -90,7 +90,7 @@ module!(
 
     let axum = fw.req::<Axum>()?;
 
-    axum.routes.push(|r| {
+    axum.add_route(|r| {
       Box::pin(async move {
         let session_config = SessionConfig::default().with_table_name("neko_users_sessions");
         let session_store = SessionPgSessionStore::new(Some(db().clone().into()), session_config)

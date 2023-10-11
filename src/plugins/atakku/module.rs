@@ -2,12 +2,12 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use futures::StreamExt;
-
 use crate::{
   core::*,
-  modules::{poise::{Ctx, Poise}}, plugins::steam::{minor_update, filter_roles, get_roles},
+  modules::poise::{Ctx, Poise},
+  plugins::steam::{filter_roles, get_roles, minor_update},
 };
+use futures::StreamExt;
 
 // Util module for maintenance commands
 pub struct Atakku;
@@ -15,9 +15,7 @@ pub struct Atakku;
 impl Module for Atakku {
   fn init(&mut self, fw: &mut Framework) -> R {
     let poise = fw.req::<Poise>()?;
-    poise.commands.push(register_commands());
-    poise.commands.push(update_steam());
-    poise.commands.push(update_roles());
+    poise.add_commands(vec![register_commands(), update_steam(), update_roles()]);
     Ok(())
   }
 }
@@ -39,7 +37,6 @@ async fn update_steam(ctx: Ctx<'_>) -> R {
   Ok(())
 }
 
-
 #[poise::command(prefix_command, hide_in_help, owners_only)]
 async fn update_roles(ctx: Ctx<'_>) -> R {
   let m = ctx.reply("Updating steam roles...").await?;
@@ -48,15 +45,14 @@ async fn update_roles(ctx: Ctx<'_>) -> R {
     let mut members = g.members_iter(&ctx).boxed();
     while let Some(member_result) = members.next().await {
       match member_result {
-        Ok(mut m) => if !m.user.bot {
-          let roles = filter_roles(
-            m.roles(ctx).unwrap_or_default(),
-            get_roles(&m).await?,
-          );
-          if !roles.is_empty() {
-            m.add_roles(ctx, roles.as_slice()).await?;
+        Ok(mut m) => {
+          if !m.user.bot {
+            let roles = filter_roles(m.roles(ctx).unwrap_or_default(), get_roles(&m).await?);
+            if !roles.is_empty() {
+              m.add_roles(ctx, roles.as_slice()).await?;
+            }
           }
-        },
+        }
         _ => {}
       }
     }

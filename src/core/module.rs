@@ -31,6 +31,11 @@ impl Framework {
   }
 }
 
+macro_rules! first {
+  {$first:expr, $other:expr} => { $first };
+  {,$other:expr} => { $other };
+}
+
 macro_rules! module {
   (@internal $name:ident, $fw:ident, $block:block) => {
     impl $crate::core::Module for $name {
@@ -40,26 +45,34 @@ macro_rules! module {
       }
     }
   };
-  ($(#[$m:meta])* $name:ident {$($pn:ident: $pt:ty = $pd:expr),*$(,)?} fn init($fw:ident) $block:block) => {
-    $(#[$m])*
-    pub struct $name {
-      $(pub $pn: $pt),*
-    }
-
-    impl Default for $name {
-      fn default() -> Self {
-        Self {
-          $($pn: $pd),*
-        }
-      }
-    }
-
-    module!(@internal $name, $fw, $block);
-  };
   ($(#[$m:meta])* $name:ident; fn init($fw:ident) $block:block) => {
     $(#[$m])*
     #[derive(Default)]
     pub struct $name;
     module!(@internal $name, $fw, $block);
+  };
+  ($(#[$m:meta])* $name:ident {$($pv:vis $pn:ident: $pt:ty $(= $pd:expr)?),*$(,)?}
+    fn init($fw:ident) $block:block 
+    
+    $($fn_vis:vis fn $fn_name:ident ($($fn_tt:tt)*) $fn_block:block)*
+  ) => {
+    $(#[$m])*
+    pub struct $name {
+      $($pv $pn: $pt),*
+    }
+
+    impl Default for $name {
+      fn default() -> Self {
+        Self {
+          $($pn: first!($($pd)?, Default::default())),*
+        }
+      }
+    }
+
+    module!(@internal $name, $fw, $block);
+
+    impl $name {
+      $($fn_vis fn $fn_name($($fn_tt)*) $fn_block)*
+    }
   };
 }

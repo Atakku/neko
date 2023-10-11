@@ -7,9 +7,11 @@ use axum::{Router, Server};
 use futures::future::BoxFuture;
 use std::net::Ipv4Addr;
 
+pub type Route = fn(Router) -> BoxFuture<'static, Res<Router>>;
+
 module!(
   Axum {
-    routes: Vec<fn(Router) -> BoxFuture<'static, Res<Router>>> = vec![],
+    routes: Vec<Route>,
     port: u16 = 8080,
   }
 
@@ -26,6 +28,11 @@ module!(
         Ok(())
       })))
     });
+  }
+
+  // TODO: solve the issue with overlap
+  pub fn add_route(&mut self, route: Route) {
+    self.routes.push(route);
   }
 );
 

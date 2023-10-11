@@ -19,7 +19,7 @@ impl Module for DeepRockGalactic {
   fn init(&mut self, fw: &mut Framework) -> R {
     fw.req::<Reqwest>()?;
     let poise = fw.req::<Poise>()?;
-    poise.commands.push(drg());
+    poise.add_command(drg());
     Ok(())
   }
 }

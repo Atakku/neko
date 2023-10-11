@@ -9,12 +9,12 @@ once_cell!(db, POOL: PgPool);
 module!(
   Postgres {
     db_url: String = env!("DATABASE_URL"),
-    options: PgPoolOptions = PgPoolOptions::new(),
+    options: PgPoolOptions,
   }
 
   fn init(fw) {
-    runtime!(fw, |m| {
-      POOL.set(m.options.connect(&m.db_url).await?)?;
+    runtime!(fw, |postgres| {
+      POOL.set(postgres.options.connect(&postgres.db_url).await?)?;
       //sqlx::migrate!("./sql").run(db()).await.unwrap();
       Ok(None)
     });

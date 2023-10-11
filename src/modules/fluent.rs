@@ -29,30 +29,19 @@ impl Debug for FluentBundles {
 #[folder = "locale/"]
 struct Locale;
 
-pub struct Fluent {
-  resources: FluentResources,
-  default: String,
-}
 
-impl Default for Fluent {
-  fn default() -> Self {
-    Self {
-      resources: FluentResources::new(),
-      default: "en-US".into(),
-    }
+module!(
+  Fluent {
+    resources: FluentResources,
+    default: String = "en-US".into(),
   }
-}
 
-once_cell!(loc, LOCALE: crate::modules::fluent::FluentBundles);
-
-impl Module for Fluent {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    load_resources(&mut self.resources)?;
-    fw.runtime.push(|m| {
-      let this = m.take::<Self>()?;
-      Ok(Box::pin(async move {
-        let mut bundles = HashMap::new();
-        for (locale, res) in this.resources {
+  fn init(fw) {
+    //TODO:
+    //load_resources(&mut self.resources)?;
+    runtime!(fw, |fluent| {
+      let mut bundles = HashMap::new();
+        for (locale, res) in fluent.resources {
           let mut bundle = FluentBundle::new_concurrent(vec![locale.parse()?]);
           for r in res {
             bundle
@@ -63,14 +52,14 @@ impl Module for Fluent {
         }
         LOCALE.set(FluentBundles {
           bundles,
-          default: this.default,
+          default: fluent.default,
         })?;
         Ok(None)
-      }))
     });
-    Ok(())
   }
-}
+);
+
+once_cell!(loc, LOCALE: crate::modules::fluent::FluentBundles);
 
 fn load_resources(res: &mut FluentResources) -> R {
   log::info!("Loading default locale resources");

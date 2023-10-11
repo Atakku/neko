@@ -16,7 +16,7 @@ pub struct FemboyTV;
 impl Module for FemboyTV {
   fn init(&mut self, fw: &mut Framework) -> R {
     let poise = fw.req::<Poise>()?;
-    poise.event_handlers.push(welcomer);
+    poise.add_event_handler(welcomer);
     Ok(())
   }
 }

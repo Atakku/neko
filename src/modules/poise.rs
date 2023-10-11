@@ -26,19 +26,19 @@ module!(
   Poise {
     token: String = env!("DISCORD_TOKEN"),
     intents: GatewayIntents = GatewayIntents::GUILD_MESSAGES,
-    commands: Vec<Cmd> = vec![],
-    event_handlers: Vec<EventHandler> = vec![],
+    commands: Vec<Cmd>,
+    event_handlers: Vec<EventHandler>,
   }
 
   fn init(fw) {
     fw.req::<Fluent>()?;
-    runtime!(fw, |m| {
+    runtime!(fw, |poise| {
       Ok(Some(tokio::spawn(async move {
         Fw::builder()
-          .token(m.token)
-          .intents(m.intents)
+          .token(poise.token)
+          .intents(poise.intents)
           .options(FrameworkOptions {
-            commands: localized_commands(m.commands, loc()),
+            commands: localized_commands(poise.commands, loc()),
             event_handler: |c, e, _f, ehs| {
               Box::pin(async move {
                 join_all(ehs.iter().map(|eh| (eh)(c, e))).await;
@@ -48,13 +48,29 @@ module!(
             ..Default::default()
           })
           .setup(move |_c, _r, _f| {
-            Box::pin(async move { Ok(m.event_handlers) })
+            Box::pin(async move { Ok(poise.event_handlers) })
           })
           .run()
           .await?;
         Ok(())
       })))
     });
+  }
+
+  pub fn add_command(&mut self, cmd: Cmd) {
+    self.commands.push(cmd);
+  }
+
+  pub fn add_commands(&mut self, mut cmd: Vec<Cmd>) {
+    self.commands.append(&mut cmd);
+  }
+
+  pub fn add_event_handler(&mut self, eh: EventHandler) {
+    self.event_handlers.push(eh);
+  }
+
+  pub fn add_intent(&mut self, intent: GatewayIntents) {
+    self.intents.insert(intent);
   }
 );
 

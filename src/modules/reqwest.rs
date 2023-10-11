@@ -12,8 +12,8 @@ module!(
   }
 
   fn init(fw) {
-    runtime!(fw, |m| {
-      CLIENT.set(Client::builder().user_agent(m.user_agent).build()?)?;
+    runtime!(fw, |reqwest| {
+      CLIENT.set(Client::builder().user_agent(reqwest.user_agent).build()?)?;
       Ok(None)
     });
   }

@@ -25,9 +25,9 @@ module!{
   fn init(fw) {
     fw.req::<Postgres>()?;
     let poise = fw.req::<Poise>()?;
-    poise.event_handlers.push(event_handler());
-    poise.intents.insert(GatewayIntents::GUILDS);
-    poise.intents.insert(GatewayIntents::GUILD_MEMBERS);
+    poise.add_event_handler(event_handler());
+    poise.add_intent(GatewayIntents::GUILDS);
+    poise.add_intent(GatewayIntents::GUILD_MEMBERS);
   }
 }
 
