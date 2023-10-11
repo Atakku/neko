@@ -149,7 +149,7 @@ macro_rules! cmd_group {
 }
 
 macro_rules! rt {
-  ($fw:ident, |$m:ident| $block:block) => {
+  ($fw:ident, |$m:tt| $block:block) => {
     $fw.runtime.push(|modules| {
       let $m = modules.take::<Self>()?;
       Ok(Box::pin(async move $block))

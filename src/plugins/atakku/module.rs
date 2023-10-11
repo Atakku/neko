@@ -9,14 +9,13 @@ use crate::{
 };
 use futures::StreamExt;
 
-// Util module for maintenance commands
-pub struct Atakku;
+module! {
+  // Util module for maintenance commands
+  Atakku;
 
-impl Module for Atakku {
-  fn init(&mut self, fw: &mut Framework) -> R {
+  fn init(fw) {
     let poise = fw.req::<Poise>()?;
     poise.add_commands(vec![register_commands(), update_steam(), update_roles()]);
-    Ok(())
   }
 }
 

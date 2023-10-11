@@ -23,7 +23,7 @@ module! {
       fontdb
     })?;
 
-    rt!(fw, |m| {
+    rt!(fw, |_| {
       Ok(None)
     });
   }

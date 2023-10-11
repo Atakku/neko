@@ -13,16 +13,16 @@ use std::fmt;
 
 use super::wrapper::Variant;
 
-pub struct DeepRockGalactic;
+module! {
+  DeepRockGalactic;
 
-impl Module for DeepRockGalactic {
-  fn init(&mut self, fw: &mut Framework) -> R {
+  fn init(fw) {
     fw.req::<Reqwest>()?;
     let poise = fw.req::<Poise>()?;
     poise.add_command(drg());
-    Ok(())
   }
 }
+
 #[poise::command(prefix_command, slash_command)]
 pub async fn drg(ctx: Ctx<'_>) -> R {
   let m = ctx.reply("Fetching Deep Dives...").await?;

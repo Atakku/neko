@@ -10,14 +10,13 @@ use poise::{
 pub const GUILD: GuildId = GuildId(1038789193113014333);
 const GENERAL: ChannelId = ChannelId(1038997543515865148);
 
-/// Module with femboy.tv discord server functionality
-pub struct FemboyTV;
+module! {
+  /// Module with femboy.tv discord server functionality
+  FemboyTV;
 
-impl Module for FemboyTV {
-  fn init(&mut self, fw: &mut Framework) -> R {
+  fn init(fw) {
     let poise = fw.req::<Poise>()?;
     poise.add_event_handler(welcomer);
-    Ok(())
   }
 }
 
