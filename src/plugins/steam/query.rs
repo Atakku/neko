@@ -4,7 +4,7 @@
 
 use crate::{
   core::*,
-  modules::{reqwest::req}, plugins::steam::{sapi_key, wrapper::{ISteamUser, IPlayerService, ISteamApps}},
+  modules::reqwest::req, plugins::steam::{sapi_key, wrapper::{ISteamUser, IPlayerService, ISteamApps}},
 };
 use crate::plugins::*;
 use chrono::Utc;
