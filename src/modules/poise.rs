@@ -11,7 +11,6 @@ use poise::{
   serenity_prelude::{Context as SCtx, GatewayIntents},
   BoxFuture, Command, Context, Event, FrameworkContext, FrameworkOptions,
 };
-use std::vec;
 
 pub type Fw = poise::Framework<Vec<EventHandler>, Err>;
 pub type FwCtx<'a> = FrameworkContext<'a, Vec<EventHandler>, Err>;
@@ -22,7 +21,7 @@ pub type EventHandler = for<'a> fn(&'a SCtx, &'a Event<'a>) -> BoxFuture<'a, R>;
 // TODO: add documentation,
 // Poise wrapper module, to let other modules add commands and subscribe to events easily
 
-module!(
+module! {
   Poise {
     token: String = env!("DISCORD_TOKEN"),
     intents: GatewayIntents = GatewayIntents::GUILD_MESSAGES,
@@ -72,7 +71,7 @@ module!(
   pub fn add_intent(&mut self, intent: GatewayIntents) {
     self.intents.insert(intent);
   }
-);
+}
 
 
 const LOCALES: [&str; 31] = [

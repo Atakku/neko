@@ -6,7 +6,7 @@ use sqlx::{postgres::PgPoolOptions, PgPool};
 
 once_cell!(db, POOL: PgPool);
 
-module!(
+module! {
   Postgres {
     db_url: String = env!("DATABASE_URL"),
     options: PgPoolOptions,
@@ -19,4 +19,4 @@ module!(
       Ok(None)
     });
   }
-);
+}

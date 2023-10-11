@@ -6,7 +6,7 @@ use reqwest::Client;
 
 once_cell!(req, CLIENT: Client);
 
-module!(
+module! {
   Reqwest {
     user_agent: String = env!("USER_AGENT", "neko.rs"),
   }
@@ -17,4 +17,4 @@ module!(
       Ok(None)
     });
   }
-);
+}

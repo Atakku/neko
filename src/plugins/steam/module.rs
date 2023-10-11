@@ -2,12 +2,16 @@
 //
 // This project is dual licensed under MIT and Apache.
 
+use super::query::{build_top_query, update_playdata, update_users, At, By, Of, QueryOutput};
 use crate::{
   core::*,
   modules::{
-    poise::{Ctx, Poise, EventHandler},
-    sqlx::Postgres, svgui::{SvgUi, render_svg}, cron::Cron,
+    cron::Cron,
+    poise::{Ctx, EventHandler, Poise},
+    sqlx::Postgres,
+    svgui::{render_svg, SvgUi},
   },
+  plugins::neko::query::all_steam_connections,
 };
 use askama::Template;
 use futures::future::join_all;
@@ -22,38 +26,29 @@ use sea_query::Query;
 use std::path::Path;
 use tokio_cron_scheduler::Job;
 
-use super::query::{build_top_query, By, Of, At, QueryOutput, update_users, update_playdata};
-
-use crate::plugins::neko::query::all_steam_connections;
-
-pub struct Steam;
-
 autocomplete!(steam_apps, crate::plugins::steam::schema::Apps);
 
 once_cell!(sapi_key, APIKEY: String);
 
-impl Module for Steam {
-  fn init(&mut self, fw: &mut Framework) -> R {
+module! {
+  Steam;
+
+  fn init(fw) {
     APIKEY.set(env!("STEAMAPI_KEY"))?;
     fw.req::<SvgUi>()?;
     fw.req::<Postgres>()?;
     let poise = fw.req::<Poise>()?;
     poise.add_command(steam());
     poise.add_event_handler(roles());
-    let cron = fw.req::<Cron>()?;
-    cron.add_job(Job::new_async("0 0 */1 * * *", |_id, _jsl| {
-      Box::pin(async move {
-        minor_update().await.unwrap();
-      })
-    })?);
-    cron.add_job(Job::new_async("0 0 0 */7 * *", |_id, _jsl| {
-      Box::pin(async move {
-        //update_apps().await.unwrap()
-      })
-    })?);
-    Ok(())
+    job!(fw, "0 0 */1 * * *", {
+      minor_update().await.unwrap();
+    });
+    job!(fw, "0 0 0 */7 * *", {
+      //update_apps().await.unwrap()
+    });
   }
 }
+
 
 fn roles() -> EventHandler {
   |c, event| {
@@ -84,9 +79,15 @@ pub async fn get_roles(m: &Member) -> Res<Vec<RoleId>> {
   qb.column(col!(steam::schema::DiscordRoles, RoleId));
 
   qb.cond_where(ex_col!(steam::schema::DiscordRoles, GuildId).eq(m.guild_id.0 as i64));
-  qb.cond_where(ex_col!(steam::schema::DiscordRoles, AppId).equals(col!(steam::schema::Playdata, AppId)));
-  qb.cond_where(ex_col!(neko::schema::UsersSteam, SteamId).equals(col!(steam::schema::Playdata, UserId)));
-  qb.cond_where(ex_col!(neko::schema::UsersSteam, NekoId).equals(col!(neko::schema::UsersDiscord, NekoId)));
+  qb.cond_where(
+    ex_col!(steam::schema::DiscordRoles, AppId).equals(col!(steam::schema::Playdata, AppId)),
+  );
+  qb.cond_where(
+    ex_col!(neko::schema::UsersSteam, SteamId).equals(col!(steam::schema::Playdata, UserId)),
+  );
+  qb.cond_where(
+    ex_col!(neko::schema::UsersSteam, NekoId).equals(col!(neko::schema::UsersDiscord, NekoId)),
+  );
   qb.cond_where(ex_col!(neko::schema::UsersDiscord, DiscordId).eq(m.user.id.0 as i64));
   qb.distinct();
   Ok(
@@ -124,7 +125,11 @@ pub async fn top(ctx: Ctx<'_>, by: By, of: Of) -> R {
 mod user {
   use crate::{
     core::R,
-    modules::{poise::Ctx}, plugins::steam::{query::{At, Of, By}, module::handle},
+    modules::poise::Ctx,
+    plugins::steam::{
+      module::handle,
+      query::{At, By, Of},
+    },
   };
   use poise::serenity_prelude::UserId;
 
@@ -139,11 +144,15 @@ mod user {
 mod app {
   use crate::{
     core::R,
-    modules::{poise::Ctx}, plugins::steam::{query::{At, By, self}, steam_apps, module::handle}
+    modules::poise::Ctx,
+    plugins::steam::{
+      module::handle,
+      query::{self, At, By},
+      steam_apps,
+    },
   };
   use poise::ChoiceParameter;
-
-use query::Of;
+  use query::Of;
   #[derive(ChoiceParameter)]
   enum AppTop {
     Users,
@@ -168,11 +177,18 @@ use query::Of;
 
 mod guild {
   use crate::{
-    core::R, plugins::{steam::{query::{At, By, self}, module::handle}, discord::discord_guilds}, modules::poise::Ctx,
+    core::R,
+    modules::poise::Ctx,
+    plugins::{
+      discord::discord_guilds,
+      steam::{
+        module::handle,
+        query::{self, At, By},
+      },
+    },
   };
   use poise::ChoiceParameter;
-
-use query::Of;
+  use query::Of;
 
   #[derive(ChoiceParameter)]
   enum GuildTop {

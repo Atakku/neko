@@ -25,8 +25,16 @@ pub mod core {
   pub type R = Res<()>;
 }
 
+#[macro_use]
 pub mod modules {
-  automod::dir!(pub "src/modules");
+  pub mod axum;
+  #[macro_use]
+  pub mod cron;
+  pub mod fluent;
+  pub mod poise;
+  pub mod reqwest;
+  pub mod sqlx;
+  pub mod svgui;
 }
 
 macro_rules! plugins {

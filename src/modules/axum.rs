@@ -9,7 +9,7 @@ use std::net::Ipv4Addr;
 
 pub type Route = fn(Router) -> BoxFuture<'static, Res<Router>>;
 
-module!(
+module! {
   Axum {
     routes: Vec<Route>,
     port: u16 = 8080,
@@ -34,5 +34,5 @@ module!(
   pub fn add_route(&mut self, route: Route) {
     self.routes.push(route);
   }
-);
+}
 

@@ -12,7 +12,7 @@ use resvg::{
 
 once_cell!(fontdb, FONTDB: Database);
 
-module!(
+module! {
   SvgUi;
 
   fn init(fw) {
@@ -27,7 +27,7 @@ module!(
       Ok(None)
     });
   }
-);
+}
 
 const SCALEUP: f32 = 1.0;
 

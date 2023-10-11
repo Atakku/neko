@@ -30,7 +30,7 @@ impl Debug for FluentBundles {
 struct Locale;
 
 
-module!(
+module! {
   Fluent {
     resources: FluentResources,
     default: String = "en-US".into(),
@@ -57,7 +57,7 @@ module!(
         Ok(None)
     });
   }
-);
+}
 
 once_cell!(loc, LOCALE: crate::modules::fluent::FluentBundles);
 

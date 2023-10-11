@@ -79,7 +79,7 @@ async fn login_now(session: SessionPgSession) -> Response {
 
 once_cell!(sid_regex, REGEX: Regex);
 
-module!(
+module! {
   Gwaaa {}
 
   fn init(fw) {
@@ -116,7 +116,7 @@ module!(
       })
     });
   }
-);
+}
 
 async fn metrics() -> String {
   let mut output = String::new();

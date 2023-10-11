@@ -2,10 +2,9 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use crate::core::*;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
-module!(
+module! {
   Cron {
     jobs: Vec<Job>
   }
@@ -24,4 +23,10 @@ module!(
   pub fn add_job(&mut self, job: Job) {
     self.jobs.push(job);
   }
-);
+}
+
+macro_rules! job {
+  ($fw:ident, $time:literal, $block:block) => {
+    $fw.req::<Cron>()?.add_job(Job::new_async($time, |_id, _jsl| Box::pin(async move $block))?)
+  };
+}
