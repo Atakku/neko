@@ -14,7 +14,7 @@ pub struct Atakku;
 
 impl Module for Atakku {
   fn init(&mut self, fw: &mut Framework) -> R {
-    let poise = fw.req_module::<Poise>()?;
+    let poise = fw.req::<Poise>()?;
     poise.commands.push(register_commands());
     poise.commands.push(update_steam());
     poise.commands.push(update_roles());

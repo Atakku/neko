@@ -17,8 +17,8 @@ pub struct DeepRockGalactic;
 
 impl Module for DeepRockGalactic {
   fn init(&mut self, fw: &mut Framework) -> R {
-    fw.req_module::<Reqwest>()?;
-    let poise = fw.req_module::<Poise>()?;
+    fw.req::<Reqwest>()?;
+    let poise = fw.req::<Poise>()?;
     poise.commands.push(drg());
     Ok(())
   }

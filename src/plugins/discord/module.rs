@@ -23,8 +23,8 @@ module!{
   Discord;
 
   fn init(fw) {
-    fw.req_module::<Postgres>()?;
-    let poise = fw.req_module::<Poise>()?;
+    fw.req::<Postgres>()?;
+    let poise = fw.req::<Poise>()?;
     poise.event_handlers.push(event_handler());
     poise.intents.insert(GatewayIntents::GUILDS);
     poise.intents.insert(GatewayIntents::GUILD_MEMBERS);

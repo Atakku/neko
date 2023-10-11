@@ -121,12 +121,14 @@ macro_rules! autocomplete {
 
 macro_rules! schema {
   ($(#[table($table:literal)] $vis:vis enum $ident:ident {$($field:ident),*$(,)?})*) => {
-    $(#[derive(sea_query::Iden)]
-    #[iden(rename = $table)]
-    $vis enum $ident {
-      Table,
-      $($field),*
-    })*
+    $(
+      #[derive(sea_query::Iden)]
+      #[iden(rename = $table)]
+      #[allow(dead_code)]
+      $vis enum $ident {
+        Table, $($field),*
+      }
+    )*
   };
 }
 

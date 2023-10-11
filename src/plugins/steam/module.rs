@@ -35,12 +35,12 @@ once_cell!(sapi_key, APIKEY: String);
 impl Module for Steam {
   fn init(&mut self, fw: &mut Framework) -> R {
     APIKEY.set(env!("STEAMAPI_KEY"))?;
-    fw.req_module::<SvgUi>()?;
-    fw.req_module::<Postgres>()?;
-    let poise = fw.req_module::<Poise>()?;
+    fw.req::<SvgUi>()?;
+    fw.req::<Postgres>()?;
+    let poise = fw.req::<Poise>()?;
     poise.commands.push(steam());
     poise.event_handlers.push(roles());
-    let cron = fw.req_module::<Cron>()?;
+    let cron = fw.req::<Cron>()?;
     cron.jobs.push(Job::new_async("0 0 */1 * * *", |_id, _jsl| {
       Box::pin(async move {
         minor_update().await.unwrap();

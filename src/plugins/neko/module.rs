@@ -83,12 +83,12 @@ module!(
   Gwaaa {}
 
   fn init(fw) {
-    fw.req_module::<crate::modules::reqwest::Reqwest>()?;
-    fw.req_module::<crate::modules::sqlx::Postgres>()?;
+    fw.req::<crate::modules::reqwest::Reqwest>()?;
+    fw.req::<crate::modules::sqlx::Postgres>()?;
     REGEX.set(Regex::new("^https://steamcommunity.com/openid/id/([0-9]{17})$")?)?;
 
 
-    let axum = fw.req_module::<Axum>()?;
+    let axum = fw.req::<Axum>()?;
 
     axum.routes.push(|r| {
       Box::pin(async move {
@@ -288,8 +288,8 @@ async fn callback_discord(
     return Ok(StatusCode::IM_A_TEAPOT.into_response());
   }
   let form_str = serde_urlencoded::to_string(&DiscordTokenReq {
-    client_id: &env!("OAUTH_DISCORD_ID"),
-    client_secret: &env!("OAUTH_DISCORD_SECRET"),
+    client_id: oauth_discord_id().await,
+    client_secret: oauth_discord_secret().await,
     grant_type: &"authorization_code",
     code: &cb.code,
     redirect_uri: &format!("{}/callback/discord", root_domain().await),

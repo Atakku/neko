@@ -29,7 +29,6 @@ pub mod modules {
   automod::dir!(pub "src/modules");
 }
 
-
 macro_rules! plugins {
   ($root:ident, $plugin:ident) => {
     plugins!($root, [], $plugin);
@@ -52,5 +51,3 @@ pub mod plugins {
   plugins!(neko, [query, schema], Gwaaa);
   plugins!(steam, [query, schema, wrapper], Steam);
 }
-
-

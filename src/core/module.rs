@@ -23,7 +23,7 @@ impl Framework {
   }
 
   /// Check if module is already loaded, and if not, load a default impl
-  pub fn req_module<T: Module + Default>(&mut self) -> Res<&mut T> {
+  pub fn req<T: Module + Default>(&mut self) -> Res<&mut T> {
     if !self.has_module::<T>() {
       self.init_module(T::default())?;
     }
@@ -47,7 +47,7 @@ macro_rules! module {
     }
 
     impl Default for $name {
-      fn default() -> Self { 
+      fn default() -> Self {
         Self {
           $($pn: $pd),*
         }
