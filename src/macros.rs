@@ -157,29 +157,6 @@ macro_rules! runtime {
   };
 }
 
-macro_rules! module {
-  ($name:ident {$($pn:ident: $pt:ty = $pd:expr),*$(,)?} fn init($fw:ident) $block:block) => {
-    pub struct $name {
-      $(pub $pn: $pt),*
-    }
-
-    impl Default for $name {
-      fn default() -> Self {
-        Self {
-          $($pn: $pd),*
-        }
-      }
-    }
-
-    impl crate::core::Module for $name {
-      fn init(&mut self, $fw: &mut crate::core::Framework) -> crate::core::R {
-        $block
-        Ok(())
-      }
-    }
-  };
-}
-
 macro_rules! col {
   ($path:path, $ident:ident) => {{
     use $path::*;

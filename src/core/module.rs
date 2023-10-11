@@ -30,3 +30,36 @@ impl Framework {
     self.modules.borrow_mut::<T>()
   }
 }
+
+macro_rules! module {
+  (@internal $name:ident, $fw:ident, $block:block) => {
+    impl $crate::core::Module for $name {
+      fn init(&mut self, $fw: &mut $crate::core::Framework) -> $crate::core::R {
+        $block
+        Ok(())
+      }
+    }
+  };
+  ($(#[$m:meta])* $name:ident {$($pn:ident: $pt:ty = $pd:expr),*$(,)?} fn init($fw:ident) $block:block) => {
+    $(#[$m])*
+    pub struct $name {
+      $(pub $pn: $pt),*
+    }
+
+    impl Default for $name {
+      fn default() -> Self { 
+        Self {
+          $($pn: $pd),*
+        }
+      }
+    }
+
+    module!(@internal $name, $fw, $block);
+  };
+  ($(#[$m:meta])* $name:ident; fn init($fw:ident) $block:block) => {
+    $(#[$m])*
+    #[derive(Default)]
+    pub struct $name;
+    module!(@internal $name, $fw, $block);
+  };
+}

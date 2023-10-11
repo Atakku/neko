@@ -13,7 +13,7 @@ use resvg::{
 once_cell!(fontdb, FONTDB: Database);
 
 module!(
-  SvgUi {}
+  SvgUi;
 
   fn init(fw) {
     FONTDB.set({

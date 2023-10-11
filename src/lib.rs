@@ -9,7 +9,21 @@
 #[macro_use]
 pub mod macros;
 
-pub mod core;
+#[macro_use]
+pub mod core {
+  use std::error::Error;
+
+  mod framework;
+  pub use framework::*;
+  #[macro_use]
+  mod module;
+  pub use module::*;
+  mod state;
+
+  pub type Err = Box<dyn Error + Send + Sync>;
+  pub type Res<T> = Result<T, Err>;
+  pub type R = Res<()>;
+}
 
 pub mod modules {
   automod::dir!(pub "src/modules");
