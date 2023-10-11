@@ -18,17 +18,16 @@ use sea_query::{Expr, OnConflict, Query};
 
 autocomplete!(discord_guilds, crate::plugins::discord::schema::Guilds);
 
-/// Discord scraper module, populates the database with user data (users, guilds, members)
-pub struct Discord;
+module!{
+  /// Discord scraper module, populates the database with user data (users, guilds, members)
+  Discord;
 
-impl Module for Discord {
-  fn init(&mut self, fw: &mut Framework) -> R {
+  fn init(fw) {
     fw.req_module::<Postgres>()?;
     let poise = fw.req_module::<Poise>()?;
     poise.event_handlers.push(event_handler());
     poise.intents.insert(GatewayIntents::GUILDS);
     poise.intents.insert(GatewayIntents::GUILD_MEMBERS);
-    Ok(())
   }
 }
 
