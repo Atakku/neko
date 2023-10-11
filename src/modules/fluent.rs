@@ -29,7 +29,6 @@ impl Debug for FluentBundles {
 #[folder = "locale/"]
 struct Locale;
 
-
 module! {
   Fluent {
     resources: FluentResources,

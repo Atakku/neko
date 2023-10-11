@@ -52,8 +52,8 @@ macro_rules! module {
     module!(@internal $name, $fw, $block);
   };
   ($(#[$m:meta])* $name:ident {$($pv:vis $pn:ident: $pt:ty $(= $pd:expr)?),*$(,)?}
-    fn init($fw:ident) $block:block 
-    
+    fn init($fw:ident) $block:block
+
     $($fn_vis:vis fn $fn_name:ident ($($fn_tt:tt)*) $fn_block:block)*
   ) => {
     $(#[$m])*

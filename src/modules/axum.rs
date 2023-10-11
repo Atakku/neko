@@ -35,4 +35,3 @@ module! {
     self.routes.push(route);
   }
 }
-

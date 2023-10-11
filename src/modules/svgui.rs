@@ -41,7 +41,7 @@ pub async fn render_svg(template: impl Template) -> Res<Vec<u8>> {
   .ok_or::<Err>("Failed to create pixmap".into())?;
   let retree = resvg::Tree::from_usvg(&tree);
   retree.render(
-    Transform::from_scale(1.0/SCALEUP, 1.0/SCALEUP),
+    Transform::from_scale(1.0 / SCALEUP, 1.0 / SCALEUP),
     &mut pixmap.as_mut(),
   );
   let encoder = webp::Encoder::new(
