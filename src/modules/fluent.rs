@@ -39,7 +39,7 @@ module! {
   fn init(fw) {
     //TODO:
     //load_resources(&mut self.resources)?;
-    runtime!(fw, |fluent| {
+    rt!(fw, |fluent| {
       let mut bundles = HashMap::new();
         for (locale, res) in fluent.resources {
           let mut bundle = FluentBundle::new_concurrent(vec![locale.parse()?]);

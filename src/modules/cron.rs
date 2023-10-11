@@ -10,7 +10,7 @@ module! {
   }
 
   fn init(fw) {
-    runtime!(fw, |cron| {
+    rt!(fw, |cron| {
       let sched = JobScheduler::new().await?;
         for job in cron.jobs {
           sched.add(job).await?;

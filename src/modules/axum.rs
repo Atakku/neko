@@ -16,7 +16,7 @@ module! {
   }
 
   fn init(fw) {
-    runtime!(fw, |axum| {
+    rt!(fw, |axum| {
       let mut router = Router::new();
       for route in axum.routes {
         router = route(router).await?;

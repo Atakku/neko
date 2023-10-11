@@ -23,7 +23,7 @@ module! {
       fontdb
     })?;
 
-    runtime!(fw, |m| {
+    rt!(fw, |m| {
       Ok(None)
     });
   }

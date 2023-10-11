@@ -13,7 +13,7 @@ module! {
   }
 
   fn init(fw) {
-    runtime!(fw, |postgres| {
+    rt!(fw, |postgres| {
       POOL.set(postgres.options.connect(&postgres.db_url).await?)?;
       //sqlx::migrate!("./sql").run(db()).await.unwrap();
       Ok(None)

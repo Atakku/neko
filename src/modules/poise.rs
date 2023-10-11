@@ -31,7 +31,7 @@ module! {
 
   fn init(fw) {
     fw.req::<Fluent>()?;
-    runtime!(fw, |poise| {
+    rt!(fw, |poise| {
       Ok(Some(tokio::spawn(async move {
         Fw::builder()
           .token(poise.token)
