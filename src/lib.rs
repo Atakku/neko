@@ -31,6 +31,7 @@ pub mod modules {
   #[macro_use]
   pub mod cron;
   pub mod fluent;
+  #[macro_use]
   pub mod poise;
   pub mod reqwest;
   #[macro_use]
@@ -58,5 +59,5 @@ pub mod plugins {
   plugins!(drg, [wrapper], DeepRockGalactic);
   plugins!(ftv, FemboyTV);
   plugins!(neko, [query, schema], Gwaaa);
-  plugins!(steam, [query, schema, wrapper], Steam);
+  plugins!(steam, [commands, query, schema, wrapper], Steam);
 }

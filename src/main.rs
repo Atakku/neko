@@ -11,12 +11,12 @@ async fn main() -> R {
   }
   pretty_env_logger::init();
   let mut fw = Framework::new();
-  fw.init_module(Atakku)?;
-  fw.init_module(FemboyTV)?;
-  fw.init_module(Discord)?;
-  fw.init_module(Steam)?;
-  fw.init_module(DeepRockGalactic)?;
-  fw.init_module(Gwaaa {})?;
+  fw.init(Atakku)?;
+  fw.init(FemboyTV)?;
+  fw.init(Discord)?;
+  fw.init(Steam)?;
+  fw.init(DeepRockGalactic)?;
+  fw.init(Gwaaa {})?;
   fw.run().await?;
   Ok(())
 }

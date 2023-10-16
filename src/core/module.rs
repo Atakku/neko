@@ -10,12 +10,12 @@ pub trait Module: Any {
 }
 
 impl Framework {
-  pub fn has_module<T: Module>(&mut self) -> bool {
+  pub fn has<T: Module>(&mut self) -> bool {
     self.modules.has::<T>()
   }
 
   /// Load a supplied module
-  pub fn init_module<T: Module>(&mut self, mut module: T) -> Res<&mut Self> {
+  pub fn init<T: Module>(&mut self, mut module: T) -> Res<&mut Self> {
     log::info!("Initializing {}", std::any::type_name::<T>());
     module.init(self)?;
     self.modules.put(module);
@@ -24,8 +24,8 @@ impl Framework {
 
   /// Check if module is already loaded, and if not, load a default impl
   pub fn req<T: Module + Default>(&mut self) -> Res<&mut T> {
-    if !self.has_module::<T>() {
-      self.init_module(T::default())?;
+    if !self.has::<T>() {
+      self.init(T::default())?;
     }
     self.modules.borrow_mut::<T>()
   }

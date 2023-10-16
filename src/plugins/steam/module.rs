@@ -11,7 +11,7 @@ use crate::{
     sqlx::Postgres,
     svgui::{render_svg, SvgUi},
   },
-  plugins::neko::query::all_steam_connections,
+  plugins::{neko::query::all_steam_connections, steam::commands::steam},
 };
 use askama::Template;
 use futures::future::join_all;
@@ -19,8 +19,7 @@ use poise::{
   serenity_prelude::{
     AttachmentType, ButtonStyle, CollectComponentInteraction, CreateActionRow,
     InteractionResponseType, Member, ReactionType, Role, RoleId,
-  },
-  Event,
+  }, Event,
 };
 use sea_query::Query;
 use std::path::Path;
@@ -48,7 +47,6 @@ module! {
     });
   }
 }
-
 
 fn roles() -> EventHandler {
   |c, event| {
@@ -80,13 +78,16 @@ pub async fn get_roles(m: &Member) -> Res<Vec<RoleId>> {
 
   qb.cond_where(ex_col!(steam::schema::SteamDiscordRoles, GuildId).eq(m.guild_id.0 as i64));
   qb.cond_where(
-    ex_col!(steam::schema::SteamDiscordRoles, AppId).equals(col!(steam::schema::SteamPlaydata, AppId)),
+    ex_col!(steam::schema::SteamDiscordRoles, AppId)
+      .equals(col!(steam::schema::SteamPlaydata, AppId)),
   );
   qb.cond_where(
-    ex_col!(neko::schema::NekoUsersSteam, SteamId).equals(col!(steam::schema::SteamPlaydata, UserId)),
+    ex_col!(neko::schema::NekoUsersSteam, SteamId)
+      .equals(col!(steam::schema::SteamPlaydata, UserId)),
   );
   qb.cond_where(
-    ex_col!(neko::schema::NekoUsersSteam, NekoId).equals(col!(neko::schema::NekoUsersDiscord, NekoId)),
+    ex_col!(neko::schema::NekoUsersSteam, NekoId)
+      .equals(col!(neko::schema::NekoUsersDiscord, NekoId)),
   );
   qb.cond_where(ex_col!(neko::schema::NekoUsersDiscord, DiscordId).eq(m.user.id.0 as i64));
   qb.distinct();
@@ -110,120 +111,9 @@ pub async fn minor_update() -> R {
   Ok(())
 }
 
-cmd_group!(steam, "user", "app", "guild", "top");
 
-cmd_group!(user, "user::top");
-cmd_group!(app, "app::top");
-cmd_group!(guild, "guild::top");
-
-#[poise::command(prefix_command, slash_command)]
-pub async fn top(ctx: Ctx<'_>, by: By, of: Of) -> R {
-  handle(ctx, format!("Top of {of} by {by}"), of, by, At::None).await
-}
 //context_menu_command = "gwaa"
 
-mod user {
-  use crate::{
-    core::R,
-    modules::poise::Ctx,
-    plugins::steam::{
-      module::handle,
-      query::{At, By, Of},
-    },
-  };
-  use poise::serenity_prelude::UserId;
-
-  #[poise::command(prefix_command, slash_command)]
-  pub async fn top(ctx: Ctx<'_>, by: By, user: Option<UserId>) -> R {
-    let user = user.unwrap_or(ctx.author().id);
-    let of = Of::Apps;
-    let title = format!("Users's ({user}) top of {of} by {by}");
-    handle(ctx, title, of, by, At::User(user.0 as i64)).await
-  }
-}
-mod app {
-  use crate::{
-    core::R,
-    modules::poise::Ctx,
-    plugins::steam::{
-      module::handle,
-      query::{self, At, By},
-      steam_apps,
-    },
-  };
-  use poise::ChoiceParameter;
-  use query::Of;
-  #[derive(ChoiceParameter)]
-  enum AppTop {
-    Users,
-    Guilds,
-  }
-
-  impl Into<Of> for AppTop {
-    fn into(self) -> Of {
-      match self {
-        AppTop::Users => Of::Users,
-        AppTop::Guilds => Of::Guilds,
-      }
-    }
-  }
-
-  #[poise::command(prefix_command, slash_command)]
-  pub async fn top(ctx: Ctx<'_>, by: By, of: AppTop, #[autocomplete = "steam_apps"] app: i32) -> R {
-    let title = format!("Apps's ({app}) top of {of} by {by}");
-    handle(ctx, title, of.into(), by, At::App(app)).await
-  }
-}
-
-mod guild {
-  use crate::{
-    core::R,
-    modules::poise::Ctx,
-    plugins::{
-      discord::discord_guilds,
-      steam::{
-        module::handle,
-        query::{self, At, By},
-      },
-    },
-  };
-  use poise::ChoiceParameter;
-  use query::Of;
-
-  #[derive(ChoiceParameter)]
-  enum GuildTop {
-    Users,
-    Apps,
-  }
-
-  impl Into<Of> for GuildTop {
-    fn into(self) -> Of {
-      match self {
-        GuildTop::Users => Of::Users,
-        GuildTop::Apps => Of::Apps,
-      }
-    }
-  }
-
-  #[poise::command(prefix_command, slash_command)]
-  pub async fn top(
-    ctx: Ctx<'_>,
-    by: By,
-    of: GuildTop,
-    //#[autocomplete = "steam_apps"] app: Option<i32>,
-    #[autocomplete = "discord_guilds"] guild: Option<String>,
-  ) -> R {
-    let guild = guild.unwrap_or(
-      ctx
-        .guild_id()
-        .unwrap_or(crate::plugins::ftv::GUILD)
-        .0
-        .to_string(),
-    );
-    let title = format!("Guild's ({guild}) top of {of} by {by}");
-    handle(ctx, title, of.into(), by, At::Guild(guild.parse::<i64>()?)).await
-  }
-}
 const SIZE: u64 = 10;
 const PAGES: u64 = 100; //todo
 
@@ -238,7 +128,7 @@ pub struct TestUI {
   pub pages: u64,
 }
 
-async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
+pub async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
   let mut msg = ctx
     .send(|b| {
       b.content(input.clone()).components(|b| {

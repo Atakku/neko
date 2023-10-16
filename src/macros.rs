@@ -33,6 +33,13 @@ macro_rules! once_cell {
   };
 }
 
+macro_rules! wrap {
+  ($block:block) => {{
+    $block;
+    Ok(())
+  }};
+}
+
 macro_rules! sql {
   (Prepare, $qb:expr) => {{
     (

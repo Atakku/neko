@@ -39,6 +39,7 @@ impl State {
       data: HashMap::default(),
     }
   }
+
   pub fn put<T: Any>(&mut self, t: T) {
     self.data.insert(TypeId::of::<T>(), Box::new(t));
   }
@@ -47,60 +48,43 @@ impl State {
     self.data.get(&TypeId::of::<T>()).is_some()
   }
 
-  pub fn try_borrow<T: Any>(&self) -> Option<&T> {
-    self
-      .data
-      .get(&TypeId::of::<T>())
-      .and_then(|b| b.downcast_ref::<T>())
-  }
-
   pub fn borrow<T: Any>(&self) -> Res<&T> {
-    Ok(self.try_borrow().ok_or(format!(
-      "Required type {} is not present in State container",
-      type_name::<T>()
-    ))?)
-  }
-
-  pub fn borrow_or_default<T: Any + Default>(&mut self) -> Res<&T> {
-    if !self.has::<T>() {
-      self.put(T::default());
-    }
-    self.borrow()
-  }
-
-  pub fn try_borrow_mut<T: Any>(&mut self) -> Option<&mut T> {
-    self
-      .data
-      .get_mut(&TypeId::of::<T>())
-      .and_then(|b| b.downcast_mut::<T>())
+    Ok(
+      self
+        .data
+        .get(&TypeId::of::<T>())
+        .and_then(|b| b.downcast_ref::<T>())
+        .ok_or(format!(
+          "Required type {} is not present in State container",
+          type_name::<T>()
+        ))?,
+    )
   }
 
   pub fn borrow_mut<T: Any>(&mut self) -> Res<&mut T> {
-    Ok(self.try_borrow_mut().ok_or(format!(
-      "Required type {} is not present in State container",
-      type_name::<T>()
-    ))?)
-  }
-
-  pub fn get_mut_or_default<T: Any + Default>(&mut self) -> Res<&mut T> {
-    if !self.has::<T>() {
-      self.put(T::default());
-    }
-    self.borrow_mut()
-  }
-
-  pub fn try_take<T: Any>(&mut self) -> Option<T> {
-    self
-      .data
-      .remove(&TypeId::of::<T>())
-      .and_then(|b| b.downcast::<T>().ok())
-      .map(|b| *b)
+    Ok(
+      self
+        .data
+        .get_mut(&TypeId::of::<T>())
+        .and_then(|b| b.downcast_mut::<T>())
+        .ok_or(format!(
+          "Required type {} is not present in State container",
+          type_name::<T>()
+        ))?,
+    )
   }
 
   pub fn take<T: Any>(&mut self) -> Res<T> {
-    Ok(self.try_take().ok_or(format!(
-      "Required type {} is not present in State container",
-      type_name::<T>()
-    ))?)
+    Ok(
+      self
+        .data
+        .remove(&TypeId::of::<T>())
+        .and_then(|b| b.downcast::<T>().ok())
+        .map(|b| *b)
+        .ok_or(format!(
+          "Required type {} is not present in State container",
+          type_name::<T>()
+        ))?,
+    )
   }
 }

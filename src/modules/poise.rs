@@ -179,3 +179,40 @@ fn get_loc<'a>(
   }
   return None;
 }
+
+macro_rules! commands {
+  (@internal $(#[$m:meta])* fn $name:ident($ctx:ident$(,$($tt:tt)*)?) $block:block) => {
+    $(#[$m])*
+    pub async fn $name($ctx: crate::modules::poise::Ctx<'_>, $($($tt)*)?) -> $crate::core::R {wrap!($block)}
+  };
+  (@internal $(#[$m:meta])* fn $name:ident($ctx:ident$(,$($tt:tt)*)?) $(-> BasicCommand)? $block:block) => {
+    #[poise::command(prefix_command, slash_command)]
+    $(#[$m])*
+    pub async fn $name($ctx: crate::modules::poise::Ctx<'_>, $($($tt)*)?) -> $crate::core::R {wrap!($block)}
+  };
+  (@internal $(#[$m:meta])* fn $name:ident($ctx:ident$(,$($tt:tt)*)?) $(-> OwnerCommand)? $block:block) => {
+    #[poise::command(prefix_command, owners_only)]
+    $(#[$m])*
+    pub async fn $name($ctx: crate::modules::poise::Ctx<'_>, $($($tt)*)?) -> $crate::core::R {wrap!($block)}
+  };
+  ($($(#[$m:meta])* fn $name:ident($ctx:ident$(,$($tt:tt)*)?) $(-> $type:ident)? $block:block)*) => {
+    $(commands!(@internal $(#[$m])* fn $name($ctx$(,$($tt)*)?) $(-> $type)? $block);)*
+  };
+}
+
+macro_rules! lim_choice {
+  ($enum:ident, $from:ident, [$($param:ident),*]) => {
+    #[derive(poise::ChoiceParameter)]
+    pub enum $enum {
+      $($param),*
+    }
+
+    impl Into<$from> for $enum {
+      fn into(self) -> $from {
+        match self {
+          $($enum::$param => $from::$param),*
+        }
+      }
+    }
+  };
+}
