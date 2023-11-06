@@ -13,7 +13,7 @@ async fn main() -> R {
   let mut fw = Framework::new();
   fw.init(Maintenance)?;
   fw.init(FemboyTV)?;
-  fw.init(Discord)?;
+  fw.init(DiscordCache)?;
   fw.init(Steam)?;
   fw.init(DeepRockGalactic)?;
   fw.init(Gwaaa {})?;

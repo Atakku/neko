@@ -4,7 +4,7 @@
 
 use serde::Deserialize;
 
-api!(ISteamApps, "https://api.steampowered.com/ISteamApps/", {
+api!("https://api.steampowered.com/ISteamApps/", {
   fn get_app_list("GetAppList/v2") -> GetAppList;
 });
 
@@ -25,7 +25,7 @@ pub struct App {
   pub name: String,
 }
 
-api!(ISteamUser, "https://api.steampowered.com/ISteamUser/", {
+api!("https://api.steampowered.com/ISteamUser/", {
   fn get_player_summaries("GetPlayerSummaries/v2") -> Response<GetPlayerSummaries> {
     key: &String,
     steamids: &String,
@@ -50,7 +50,7 @@ pub struct PlayerSummary {
   pub name: String,
 }
 
-api!(IPlayerService, "https://api.steampowered.com/IPlayerService/", {
+api!("https://api.steampowered.com/IPlayerService/", {
   fn get_owned_games("GetOwnedGames/v1") -> Response<GetRecentlyPlayedGames> {
     key: &String,
     steamid: u64,

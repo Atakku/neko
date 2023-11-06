@@ -5,7 +5,7 @@
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 
-api!(DeepRockGalacticApi, "https://drgapi.com/v1/", {
+api!("https://drgapi.com/v1/", {
   fn get_deepdives("deepdives") -> DeepDives;
   fn get_salutes("salutes") -> Salutes;
   fn get_trivia("trivia") -> Trivia;

@@ -67,29 +67,6 @@ macro_rules! sql {
   }};
 }
 
-macro_rules! api {
-  ($name:ident, $base:literal, {
-    $(
-      fn $fun:ident($endpoint:literal) -> $ty:ty $({
-        $($pn:ident:$pt:ty),*$(,)?
-      })?;
-    )*
-  }) => {
-    pub trait $name {
-      $(async fn $fun(&self, $($($pn: $pt),*)?) -> crate::core::Res<$ty>;)*
-    }
-
-    impl $name for reqwest::Client {
-      $(async fn $fun(&self, $($($pn: $pt),*)?) -> crate::core::Res<$ty> {
-        let req = format!(concat!($base, $endpoint, $("?",$(stringify!($pn), "={", stringify!($pn), "}&"),*)?), $($($pn=$pn),*)?);
-        log::trace!("Sending req to {req}");
-        let res = self.get(req).send().await?;
-        log::trace!("Received status: {}", res.status());
-        Ok(res.json::<$ty>().await?)
-      })*
-    }
-  };
-}
 
 macro_rules! autocomplete {
   ( $fn_name:ident, $path:path, $id:ident, $name:ident) => {

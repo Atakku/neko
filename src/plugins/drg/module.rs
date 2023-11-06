@@ -6,8 +6,8 @@ use crate::{
   core::*,
   modules::{
     poise::{Ctx, Poise},
-    reqwest::{req, Reqwest},
-  }, plugins::drg::wrapper::DeepRockGalacticApi,
+    reqwest::{Reqwest},
+  }, plugins::drg::wrapper::get_deepdives,
 };
 use std::fmt;
 
@@ -26,7 +26,7 @@ module! {
 #[poise::command(prefix_command, slash_command)]
 pub async fn drg(ctx: Ctx<'_>) -> R {
   let m = ctx.reply("Fetching Deep Dives...").await?;
-  let res = req().get_deepdives().await?;
+  let res = get_deepdives().await?;
   m.edit(ctx, |m| {
     m.embed(|e| {
       for variant in res.variants {

@@ -3,9 +3,10 @@
 // This project is dual licensed under MIT and Apache.
 
 schema! {
-  #[table("discord_welcomer")]
+  #[table("discord_roles_steam")]
   pub enum SteamDiscordRoles {
-    GuildId.big_integer().primary_key(), 
-    ChannelId.big_integer()
+    GuildId.big_integer(), 
+    RoleId.big_integer(), 
+    AppId.big_integer(),
   }
 }

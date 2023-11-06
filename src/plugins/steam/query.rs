@@ -3,8 +3,7 @@
 // This project is dual licensed under MIT and Apache.
 
 use crate::{
-  core::*,
-  modules::reqwest::req, plugins::steam::{sapi_key, wrapper::{ISteamUser, IPlayerService, ISteamApps}},
+  core::*, plugins::steam::{sapi_key, wrapper::{get_app_list, get_owned_games, get_player_summaries}},
 };
 use crate::plugins::*;
 use chrono::Utc;
@@ -16,7 +15,7 @@ use std::collections::HashMap;
 pub async fn update_apps() -> R {
   use super::schema::SteamApps::*;
   log::info!("Updating Steam apps");
-  let apps = req().get_app_list().await?.applist.apps;
+  let apps = get_app_list().await?.applist.apps;
   for apps_chunk in apps.chunks(10000) {
     let mut qb = Query::insert();
     qb.into_table(Table);
@@ -36,8 +35,7 @@ pub async fn update_users(user_list: &Vec<(i64,)>) -> R {
   log::info!("Updating Steam users");
   let mut profiles = vec![];
   for chunk in user_list.chunks(100) {
-    match req()
-      .get_player_summaries(
+    match get_player_summaries(
         sapi_key(),
         &chunk
           .into_iter()
@@ -77,8 +75,8 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
   let mut games = HashMap::new();
   let mut playdata = vec![];
   for user in user_list {
-    if let Ok(res) = req()
-      .get_owned_games(sapi_key(), user.0 as u64, true, true)
+    if let Ok(res) = 
+      get_owned_games(sapi_key(), user.0 as u64, true, true)
       .await
     {
       for game in res.response.games {

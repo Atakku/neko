@@ -24,18 +24,23 @@ pub mod core {
   pub type R = Res<()>;
 }
 
+macro_rules! modules {
+  ($root:ident, $plugin:ident) => {
+    #[macro_use]
+    pub mod $root;
+    pub use $root::$plugin;
+  };
+}
+
 #[macro_use]
 pub mod modules {
-  pub mod axum;
-  #[macro_use]
-  pub mod cron;
-  pub mod fluent;
-  #[macro_use]
-  pub mod poise;
-  pub mod reqwest;
-  #[macro_use]
-  pub mod sqlx;
-  pub mod svgui;
+  modules!(axum, Axum);
+  modules!(cron, Cron);
+  modules!(fluent, Fluent);
+  modules!(poise, Poise);
+  modules!(reqwest, Reqwest);
+  modules!(sqlx, Postgres);
+  modules!(svgui, SvgUi);
 }
 
 macro_rules! plugins {
@@ -54,6 +59,7 @@ macro_rules! plugins {
 
 pub mod plugins {
   plugins!(discord_cache, [schema], DiscordCache);
+  plugins!(discord_roles, [schema], DiscordRoles);
   plugins!(discord_welcomer, [schema], DiscordWelcomer);
   plugins!(drg, [wrapper], DeepRockGalactic);
   plugins!(ftv, FemboyTV);

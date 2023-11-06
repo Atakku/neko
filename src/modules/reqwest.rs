@@ -18,3 +18,21 @@ module! {
     });
   }
 }
+
+macro_rules! api {
+  ($base:literal, {
+    $(
+      fn $fun:ident($endpoint:literal) -> $ty:ty $({
+        $($pn:ident:$pt:ty),*$(,)?
+      })?;
+    )*
+  }) => {
+    $(pub async fn $fun($($($pn: $pt),*)?) -> crate::core::Res<$ty> {
+      let req = format!(concat!($base, $endpoint, $("?",$(stringify!($pn), "={", stringify!($pn), "}&"),*)?), $($($pn=$pn),*)?);
+      log::trace!("Sending req to {req}");
+      let res = crate::modules::reqwest::req().get(req).send().await?;
+      log::trace!("Received status: {}", res.status());
+      Ok(res.json::<$ty>().await?)
+    })*
+  };
+}
