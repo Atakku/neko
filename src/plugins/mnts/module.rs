@@ -10,8 +10,8 @@ use crate::{
 use futures::StreamExt;
 
 module! {
-  // Util module for maintenance commands
-  Atakku;
+  /// Utility module for maintenance commands
+  Maintenance;
 
   fn init(fw) {
     let poise = fw.req::<Poise>()?;

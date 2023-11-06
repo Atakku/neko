@@ -20,8 +20,8 @@ pub async fn update_apps() -> R {
   for apps_chunk in apps.chunks(10000) {
     let mut qb = Query::insert();
     qb.into_table(Table);
-    qb.columns([Id, Name]);
-    qb.on_conflict(OnConflict::column(Id).update_column(Name).to_owned());
+    qb.columns([AppId, AppName]);
+    qb.on_conflict(OnConflict::column(AppId).update_column(AppName).to_owned());
     for app in apps_chunk {
       qb.values([(app.id as i64).into(), app.name.clone().into()])?;
     }
@@ -59,8 +59,8 @@ pub async fn update_users(user_list: &Vec<(i64,)>) -> R {
     use super::schema::SteamUsers::*;
     let mut qb = Query::insert();
     qb.into_table(Table);
-    qb.columns([Id, Name]);
-    qb.on_conflict(OnConflict::column(Id).update_column(Name).to_owned());
+    qb.columns([SteamId, Username]);
+    qb.on_conflict(OnConflict::column(SteamId).update_column(Username).to_owned());
     for v in chunk {
       qb.values([v.0.into(), v.1.clone().into()])?;
     }
@@ -93,8 +93,8 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
     use super::schema::SteamApps::*;
     let mut qb = Query::insert();
     qb.into_table(Table);
-    qb.columns([Id, Name]);
-    qb.on_conflict(OnConflict::column(Id).update_column(Name).to_owned());
+    qb.columns([AppId, AppName]);
+    qb.on_conflict(OnConflict::column(AppId).update_column(AppName).to_owned());
     for v in chunk {
       qb.values([v.0.into(), v.1.clone().into()])?;
     }
@@ -112,7 +112,7 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
           .update_column(Playtime)
           .to_owned(),
       );
-      qb.returning(Query::returning().columns([Id, Playtime]));
+      qb.returning(Query::returning().columns([PlaydataId, Playtime]));
       for v in chunk {
         qb.values([v.0.into(), v.1.into(), v.2.into()])?;
       }
@@ -170,19 +170,19 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
     Of::Apps => {
       use super::schema::{SteamApps, SteamPlaydata};
       qb.from(SteamApps::Table);
-      qb.and_where(ex_col!(SteamApps, Id).equals(col!(SteamPlaydata, AppId)));
-      qb.group_by_col(col!(SteamApps, Id));
-      qb.columns([col!(SteamApps, Id), col!(SteamApps, Name)]);
+      qb.and_where(ex_col!(SteamApps, AppId).equals(col!(SteamPlaydata, AppId)));
+      qb.group_by_col(col!(SteamApps, AppId));
+      qb.columns([col!(SteamApps, AppId), col!(SteamApps, AppName)]);
     }
     Of::Guilds => {
-      use discord::schema::{DiscordGuilds, DiscordMembers};
+      use discord_cache::schema::{DiscordGuilds, DiscordMembers};
       qb.from(DiscordGuilds::Table);
       qb.and_where(ex_col!(DiscordGuilds, Id).equals(col!(DiscordMembers, GuildId)));
       qb.group_by_col(col!(DiscordGuilds, Id));
       qb.columns([col!(DiscordGuilds, Id), col!(DiscordGuilds, Name)]);
     }
     Of::Users => {
-      use discord::schema::DiscordUsers;
+      use discord_cache::schema::DiscordUsers;
       use neko::schema::NekoUsersDiscord;
       qb.from(DiscordUsers::Table);
       qb.and_where(ex_col!(DiscordUsers, Id).equals(col!(NekoUsersDiscord, DiscordId)));
@@ -215,7 +215,7 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
   }
   match at {
     At::User(id) => qb.and_where(ex_col!(neko::schema::NekoUsersDiscord, DiscordId).eq(id)),
-    At::Guild(id) => qb.and_where(ex_col!(discord::schema::DiscordMembers, GuildId).eq(id)),
+    At::Guild(id) => qb.and_where(ex_col!(discord_cache::schema::DiscordMembers, GuildId).eq(id)),
     At::App(id) => qb.and_where(ex_col!(steam::schema::SteamPlaydata, AppId).eq(id)),
     At::None => &qb,
   };
@@ -242,7 +242,7 @@ fn member_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
       return;
     });
   });
-  use discord::schema::*;
+  use discord_cache::schema::*;
   use neko::schema::*;
   qb.from(DiscordMembers::Table);
   qb.and_where(

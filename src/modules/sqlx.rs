@@ -21,14 +21,17 @@ module! {
   }
 }
 
-//TODO: generate init query
+pub trait InitTable {
+  async fn init();
+}
+
 /// Declare a new sea_query schema
 macro_rules! schema {
   ($(
     #[table($table:literal)]
     //$(#[alias($alias:ident)])*
     $vis:vis enum $ident:ident {
-      $($field:ident),*$(,)?
+      $($field:ident$(.$param:ident())*),*$(,)?
     }
   )*) => {
     $(
@@ -37,6 +40,13 @@ macro_rules! schema {
       #[allow(dead_code)]
       $vis enum $ident {
         Table, $($field),*
+      }
+
+      impl crate::modules::sqlx::InitTable for $ident {
+        async fn init() {
+          sea_query::Table::create().table($ident::Table).if_not_exists()
+          $(.col(&mut sea_query::ColumnDef::new($ident::$field)$(.$param())*))*;
+        }
       }
       //$(pub use $ident as $alias;)*
     )*

@@ -5,17 +5,25 @@
 schema! {
   #[table("steam_users")]
   pub enum SteamUsers {
-    Id, Name, Avatar, LastOnline,
+    SteamId.big_integer().primary_key(),
+    Username.text(),
+    Avatar.text(),
+    LastOnline.big_integer(),
   }
 
   #[table("steam_apps")]
   pub enum SteamApps {
-    Id, Name,
+    AppId.big_integer().primary_key(),
+    AppName.text(),
   }
 
   #[table("steam_playdata")]
   pub enum SteamPlaydata {
-    Id, UserId, AppId, Playtime,
+    // TODO: identity
+    PlaydataId.big_integer().primary_key(),
+    UserId.big_integer().not_null(),
+    AppId.big_integer().not_null(),
+    Playtime.integer().not_null(),
   }
 
   #[table("steam_playhist")]

@@ -92,7 +92,7 @@ macro_rules! api {
 }
 
 macro_rules! autocomplete {
-  ( $fn_name:ident, $path:path) => {
+  ( $fn_name:ident, $path:path, $id:ident, $name:ident) => {
     pub async fn $fn_name<'a>(
       _: crate::modules::poise::Ctx<'_>,
       search: &'a str,
@@ -101,17 +101,17 @@ macro_rules! autocomplete {
       use $path::*;
       let mut qb = sea_query::SelectStatement::new();
       qb.from(Table);
-      qb.columns([Id, Name]);
+      qb.columns([$id, $name]);
       qb.and_where(
-        Expr::expr(Func::lower(Expr::col(Name)))
+        Expr::expr(Func::lower(Expr::col($name)))
           .like(format!("%{}%", search.to_lowercase()))
           .or(
-            Expr::col(Id)
+            Expr::col($id)
               .cast_as(Alias::new("TEXT"))
               .like(format!("%{search}%")),
           ),
       );
-      qb.order_by(Name, Order::Asc);
+      qb.order_by($name, Order::Asc);
       qb.limit(25);
       use unicode_truncate::UnicodeTruncateStr;
       sql!(FetchAll, &qb, (i64, String))

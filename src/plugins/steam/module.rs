@@ -11,7 +11,7 @@ use crate::{
     sqlx::Postgres,
     svgui::{render_svg, SvgUi},
   },
-  plugins::{neko::query::all_steam_connections, steam::commands::steam},
+  plugins::{neko::query::all_steam_connections, steam::{poise::steam, schema::SteamApps}},
 };
 use askama::Template;
 use futures::future::join_all;
@@ -25,7 +25,7 @@ use sea_query::Query;
 use std::path::Path;
 use tokio_cron_scheduler::Job;
 
-autocomplete!(steam_apps, crate::plugins::steam::schema::SteamApps);
+autocomplete!(steam_apps, SteamApps, AppId, AppName);
 
 once_cell!(sapi_key, APIKEY: String);
 

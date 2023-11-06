@@ -7,7 +7,7 @@ use crate::{
   modules::{
     poise::{EventHandler, Poise},
     sqlx::Postgres,
-  },
+  }, plugins::discord_cache::schema::DiscordGuilds,
 };
 use futures::StreamExt;
 use poise::{
@@ -16,11 +16,11 @@ use poise::{
 };
 use sea_query::{Expr, OnConflict, Query};
 
-autocomplete!(discord_guilds, crate::plugins::discord::schema::DiscordGuilds);
+autocomplete!(discord_guilds, DiscordGuilds, Id, Name);
 
 module!{
-  /// Discord scraper module, populates the database with user data (users, guilds, members)
-  Discord;
+  /// In database cache of all known Discord guilds/users/members for usage in database queries
+  DiscordCache;
 
   fn init(fw) {
     fw.req::<Postgres>()?;

@@ -3,7 +3,7 @@
 // This project is dual licensed under MIT and Apache.
 
 use crate::plugins::{
-  discord::discord_guilds,
+  discord_cache::discord_guilds,
   steam::{
     handle,
     query::{At, By, Of},
@@ -39,13 +39,7 @@ commands! {
   }
 
   fn guild_top(ctx, by: By, of: GuildTop, #[autocomplete = "discord_guilds"] guild: Option<String>) -> BasicCommand {
-    let guild = guild.unwrap_or(
-      ctx
-        .guild_id()
-        .unwrap_or(crate::plugins::ftv::GUILD)
-        .0
-        .to_string(),
-    );
+    let guild = guild.unwrap_or(ctx.guild_id().unwrap_or(crate::plugins::ftv::GUILD).0.to_string());
     let title = format!("Guild's ({guild}) top of {of} by {by}");
     handle(ctx, title, of.into(), by, At::Guild(guild.parse::<i64>()?)).await?;
   }

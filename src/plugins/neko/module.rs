@@ -127,14 +127,14 @@ async fn metrics() -> String {
   qb.from(SteamApps::Table);
   qb.from(SteamUsers::Table);
   qb.from(SteamPlaydata::Table);
-  qb.and_where(ex_col!(SteamPlaydata, AppId).equals(col!(SteamApps, Id)));
-  qb.and_where(ex_col!(SteamPlaydata, UserId).equals(col!(SteamUsers, Id)));
-  qb.column(col!(SteamUsers, Name));
+  qb.and_where(ex_col!(SteamPlaydata, AppId).equals(col!(SteamApps, AppId)));
+  qb.and_where(ex_col!(SteamPlaydata, UserId).equals(col!(SteamUsers, SteamId)));
+  qb.column(col!(SteamUsers, Username));
   qb.expr_as(
     Func::sum(ex_col!(SteamPlaydata, Playtime)),
     Alias::new("sum_count"),
   );
-  qb.group_by_col(col!(SteamUsers, Id));
+  qb.group_by_col(col!(SteamUsers, SteamId));
   match sql!(FetchAll, &qb, (String, i64)) {
     Ok(data) => {
       for (u, p) in data {

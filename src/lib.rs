@@ -3,7 +3,6 @@
 // This project is dual licensed under MIT and Apache.
 
 #![feature(trait_alias)]
-#![feature(async_fn_in_trait)]
 #![feature(async_closure)]
 
 #[macro_use]
@@ -54,10 +53,11 @@ macro_rules! plugins {
 }
 
 pub mod plugins {
-  plugins!(atakku, Atakku);
-  plugins!(discord, [schema], Discord);
+  plugins!(discord_cache, [schema], DiscordCache);
+  plugins!(discord_welcomer, [schema], DiscordWelcomer);
   plugins!(drg, [wrapper], DeepRockGalactic);
   plugins!(ftv, FemboyTV);
+  plugins!(mnts, Maintenance);
   plugins!(neko, [query, schema], Gwaaa);
-  plugins!(steam, [commands, query, schema, wrapper], Steam);
+  plugins!(steam, [poise, query, schema, wrapper], Steam);
 }
