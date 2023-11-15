@@ -57,8 +57,8 @@ pub async fn update_users(user_list: &Vec<(i64,)>) -> R {
     use super::schema::SteamUsers::*;
     let mut qb = Query::insert();
     qb.into_table(Table);
-    qb.columns([SteamId, Username]);
-    qb.on_conflict(OnConflict::column(SteamId).update_column(Username).to_owned());
+    qb.columns([UserId, Username]);
+    qb.on_conflict(OnConflict::column(UserId).update_column(Username).to_owned());
     for v in chunk {
       qb.values([v.0.into(), v.1.clone().into()])?;
     }
@@ -173,19 +173,19 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
       qb.columns([col!(SteamApps, AppId), col!(SteamApps, AppName)]);
     }
     Of::Guilds => {
-      use discord_cache::schema::{DiscordGuilds, DiscordMembers};
-      qb.from(DiscordGuilds::Table);
-      qb.and_where(ex_col!(DiscordGuilds, Id).equals(col!(DiscordMembers, GuildId)));
-      qb.group_by_col(col!(DiscordGuilds, Id));
-      qb.columns([col!(DiscordGuilds, Id), col!(DiscordGuilds, Name)]);
+      use discord_cache::schema::{DiscordCacheGuilds, DiscordCacheMembers};
+      qb.from(DiscordCacheGuilds::Table);
+      qb.and_where(ex_col!(DiscordCacheGuilds, GuildId).equals(col!(DiscordCacheMembers, GuildId)));
+      qb.group_by_col(col!(DiscordCacheGuilds, GuildId));
+      qb.columns([col!(DiscordCacheGuilds, GuildId), col!(DiscordCacheGuilds, Name)]);
     }
     Of::Users => {
-      use discord_cache::schema::DiscordUsers;
+      use discord_cache::schema::DiscordCacheUsers;
       use neko::schema::NekoUsersDiscord;
-      qb.from(DiscordUsers::Table);
-      qb.and_where(ex_col!(DiscordUsers, Id).equals(col!(NekoUsersDiscord, DiscordId)));
-      qb.group_by_col(col!(DiscordUsers, Id));
-      qb.columns([col!(DiscordUsers, Id), col!(DiscordUsers, Name)]);
+      qb.from(DiscordCacheUsers::Table);
+      qb.and_where(ex_col!(DiscordCacheUsers, UserId).equals(col!(NekoUsersDiscord, DiscordId)));
+      qb.group_by_col(col!(DiscordCacheUsers, UserId));
+      qb.columns([col!(DiscordCacheUsers, UserId), col!(DiscordCacheUsers, Name)]);
     }
   }
   {
@@ -213,7 +213,7 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
   }
   match at {
     At::User(id) => qb.and_where(ex_col!(neko::schema::NekoUsersDiscord, DiscordId).eq(id)),
-    At::Guild(id) => qb.and_where(ex_col!(discord_cache::schema::DiscordMembers, GuildId).eq(id)),
+    At::Guild(id) => qb.and_where(ex_col!(discord_cache::schema::DiscordCacheMembers, GuildId).eq(id)),
     At::App(id) => qb.and_where(ex_col!(steam::schema::SteamPlaydata, AppId).eq(id)),
     At::None => &qb,
   };
@@ -242,9 +242,9 @@ fn member_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
   });
   use discord_cache::schema::*;
   use neko::schema::*;
-  qb.from(DiscordMembers::Table);
+  qb.from(DiscordCacheMembers::Table);
   qb.and_where(
-    Expr::col((DiscordMembers::Table, DiscordMembers::UserId))
+    Expr::col((DiscordCacheMembers::Table, DiscordCacheMembers::UserId))
       .equals((NekoUsersDiscord::Table, NekoUsersDiscord::DiscordId)),
   );
 }

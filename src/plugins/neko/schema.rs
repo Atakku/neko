@@ -3,38 +3,42 @@
 // This project is dual licensed under MIT and Apache.
 
 schema! {
-  #[table("neko_users")]
   pub enum NekoUsers {
-    NekoId, Slug
+    NekoId.big_integer().extra("GENERATED ALWAYS AS IDENTITY"), 
+    Slug.char_len(32).unique_key()
   }
 
-  #[table("neko_users_discord")]
   pub enum NekoUsersDiscord {
-    NekoId, DiscordId
+    NekoId.big_integer().not_null(),
+    DiscordId.big_integer().primary_key();
+    Self.foreign_key(fk!(NekoUsers, NekoId, Cascade, Cascade))
   }
 
-  #[table("neko_users_steam")]
   pub enum NekoUsersSteam {
-    NekoId, SteamId
+    NekoId.big_integer().not_null(),
+    SteamId.big_integer().primary_key();
+    Self.foreign_key(fk!(NekoUsers, NekoId, Cascade, Cascade))
   }
 
-  #[table("neko_users_github")]
   pub enum NekoUsersGithub {
-    NekoId, GithubId
+    NekoId.big_integer().not_null(),
+    GithubId.big_integer().primary_key();
+    Self.foreign_key(fk!(NekoUsers, NekoId, Cascade, Cascade))
   }
 
-  #[table("neko_users_anilist")]
   pub enum NekoUsersAnilist {
-    NekoId, AnilistId
+    NekoId.big_integer().not_null(),
+    AnilistId.big_integer().primary_key();
+    Self.foreign_key(fk!(NekoUsers, NekoId, Cascade, Cascade))
   }
 
-  #[table("neko_users_telegram")]
   pub enum NekoUsersTelegram {
-    NekoId, TelegramId
+    NekoId.big_integer().not_null(),
+    TelegramId.big_integer().primary_key();
+    Self.foreign_key(fk!(NekoUsers, NekoId, Cascade, Cascade))
   }
 
-  #[table("neko_whitelist_discord")]
   pub enum NekoWhitelistDiscord {
-    GuildId
+    GuildId.big_integer().primary_key()
   }
 }

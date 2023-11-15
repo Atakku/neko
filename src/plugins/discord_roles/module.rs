@@ -8,7 +8,8 @@ module! {
   DiscordRoles;
 
   fn init(fw) {
-    fw.req::<Postgres>()?;
+    let pg = fw.req::<Postgres>()?;
+    pg.create_tables(&mut super::schema::create_tables());
     fw.req::<Poise>()?;
   }
 }

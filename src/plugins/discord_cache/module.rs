@@ -7,7 +7,7 @@ use crate::{
   modules::{
     poise::{EventHandler, Poise},
     sqlx::Postgres,
-  }, plugins::discord_cache::schema::DiscordGuilds,
+  }, plugins::discord_cache::schema::DiscordCacheGuilds,
 };
 use futures::StreamExt;
 use poise::{
@@ -16,14 +16,15 @@ use poise::{
 };
 use sea_query::{Expr, OnConflict, Query};
 
-autocomplete!(discord_guilds, DiscordGuilds, Id, Name);
+autocomplete!(discord_guilds, DiscordCacheGuilds, GuildId, Name);
 
 module!{
   /// In database cache of all known Discord guilds/users/members for usage in database queries
   DiscordCache;
 
   fn init(fw) {
-    fw.req::<Postgres>()?;
+    let pg = fw.req::<Postgres>()?;
+    pg.create_tables(&mut super::schema::create_tables());
     let poise = fw.req::<Poise>()?;
     poise.add_event_handler(event_handler());
     poise.add_intent(GatewayIntents::GUILDS);
@@ -116,15 +117,15 @@ async fn check_guild_whitelist(id: GuildId) -> Res<bool> {
 }
 
 async fn update_guild(ctx: &Context, id: GuildId) -> R {
-  use super::schema::DiscordGuilds::*;
+  use super::schema::DiscordCacheGuilds::*;
   log::trace!("Requesting {id} information");
   let info = id.get_preview(ctx).await?;
   log::trace!("Upserting {id} information into db");
   let mut qb = Query::insert();
   qb.into_table(Table);
-  qb.columns([Id, Name, Icon]);
+  qb.columns([GuildId, Name, Icon]);
   qb.on_conflict(
-    OnConflict::column(Id)
+    OnConflict::column(GuildId)
       .update_columns([Name, Icon])
       .to_owned(),
   );
@@ -134,17 +135,17 @@ async fn update_guild(ctx: &Context, id: GuildId) -> R {
 }
 
 async fn remove_guild(id: GuildId) -> R {
-  use super::schema::DiscordGuilds::*;
+  use super::schema::DiscordCacheGuilds::*;
   log::trace!("Removing {id} information from db");
   let mut qb = Query::delete();
   qb.from_table(Table);
-  qb.cond_where(Expr::col(Id).eq(id.0));
+  qb.cond_where(Expr::col(GuildId).eq(id.0));
   sql!(Execute, &qb)?;
   Ok(())
 }
 
 async fn prune_all_guilds() -> R {
-  use super::schema::DiscordGuilds::*;
+  use super::schema::DiscordCacheGuilds::*;
   log::trace!("Pruning all guilds");
   let mut qb = Query::delete();
   qb.from_table(Table);
@@ -155,14 +156,14 @@ async fn prune_all_guilds() -> R {
 const CHUNK_SIZE: usize = 10000;
 
 async fn update_users(users: Vec<User>) -> R {
-  use super::schema::DiscordUsers::*;
+  use super::schema::DiscordCacheUsers::*;
   log::trace!("Updating {} users", users.len());
   for chunk in users.chunks(CHUNK_SIZE) {
     let mut qb = Query::insert();
     qb.into_table(Table);
-    qb.columns([Id, Name, Nick, Avatar]);
+    qb.columns([UserId, Name, Nick, Avatar]);
     qb.on_conflict(
-      OnConflict::column(Id)
+      OnConflict::column(UserId)
         .update_columns([Name, Nick, Avatar])
         .to_owned(),
     );
@@ -182,7 +183,7 @@ async fn update_users(users: Vec<User>) -> R {
 }
 
 async fn update_members(members: Vec<Member>) -> R {
-  use super::schema::DiscordMembers::*;
+  use super::schema::DiscordCacheMembers::*;
   log::trace!("Updating {} members", members.len());
   for chunk in members.chunks(CHUNK_SIZE) {
     let mut qb = Query::insert();
@@ -209,7 +210,7 @@ async fn update_members(members: Vec<Member>) -> R {
 }
 
 async fn remove_member(g: GuildId, u: UserId) -> R {
-  use super::schema::DiscordMembers::*;
+  use super::schema::DiscordCacheMembers::*;
   let mut qb = Query::delete();
   qb.from_table(Table);
   qb.cond_where(Expr::col(GuildId).eq(g.0));

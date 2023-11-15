@@ -10,7 +10,7 @@ async fn main() -> R {
     std::env::set_var("RUST_LOG", "warn,neko=trace");
   }
   pretty_env_logger::init();
-  let mut fw = Framework::new();
+  let mut fw = ModuleFramework::new();
   fw.init(Maintenance)?;
   fw.init(FemboyTV)?;
   fw.init(DiscordCache)?;

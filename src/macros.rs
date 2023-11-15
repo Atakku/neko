@@ -67,7 +67,6 @@ macro_rules! sql {
   }};
 }
 
-
 macro_rules! autocomplete {
   ( $fn_name:ident, $path:path, $id:ident, $name:ident) => {
     pub async fn $fn_name<'a>(
@@ -122,7 +121,7 @@ macro_rules! cmd_group {
 macro_rules! rt {
   ($fw:ident, |$m:tt| $block:block) => {
     $fw.runtime.push(|modules| {
-      let $m = modules.take::<Self>()?;
+      let $m = crate::core::ModuleFramework::take::<Self>(modules)?;
       Ok(Box::pin(async move $block))
     });
   };

@@ -1,7 +1,7 @@
 
 use crate::{
   core::Err,
-  modules::{reqwest::req, axum::Axum, sqlx::db}, plugins::steam::query::{update_users, update_playdata},
+  modules::{reqwest::req, axum::Axum, sqlx::db, Postgres}, plugins::steam::query::{update_users, update_playdata},
 };
 use axum::{
   http::HeaderValue,
@@ -84,7 +84,8 @@ module! {
 
   fn init(fw) {
     fw.req::<crate::modules::reqwest::Reqwest>()?;
-    fw.req::<crate::modules::sqlx::Postgres>()?;
+    let pg = fw.req::<Postgres>()?;
+    pg.create_tables(&mut super::schema::create_tables());
     REGEX.set(Regex::new("^https://steamcommunity.com/openid/id/([0-9]{17})$")?)?;
 
 
@@ -128,13 +129,13 @@ async fn metrics() -> String {
   qb.from(SteamUsers::Table);
   qb.from(SteamPlaydata::Table);
   qb.and_where(ex_col!(SteamPlaydata, AppId).equals(col!(SteamApps, AppId)));
-  qb.and_where(ex_col!(SteamPlaydata, UserId).equals(col!(SteamUsers, SteamId)));
+  qb.and_where(ex_col!(SteamPlaydata, UserId).equals(col!(SteamUsers, UserId)));
   qb.column(col!(SteamUsers, Username));
   qb.expr_as(
     Func::sum(ex_col!(SteamPlaydata, Playtime)),
     Alias::new("sum_count"),
   );
-  qb.group_by_col(col!(SteamUsers, SteamId));
+  qb.group_by_col(col!(SteamUsers, UserId));
   match sql!(FetchAll, &qb, (String, i64)) {
     Ok(data) => {
       for (u, p) in data {

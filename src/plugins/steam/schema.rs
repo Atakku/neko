@@ -3,37 +3,33 @@
 // This project is dual licensed under MIT and Apache.
 
 schema! {
-  #[table("steam_users")]
   pub enum SteamUsers {
-    SteamId.big_integer().primary_key(),
+    UserId.big_integer().primary_key(),
     Username.text(),
     Avatar.text(),
     LastOnline.big_integer(),
   }
 
-  #[table("steam_apps")]
   pub enum SteamApps {
     AppId.big_integer().primary_key(),
     AppName.text(),
   }
 
-  #[table("steam_playdata")]
   pub enum SteamPlaydata {
-    // TODO: identity
-    PlaydataId.big_integer().primary_key(),
+    PlaydataId.big_integer().primary_key().extra("GENERATED ALWAYS AS IDENTITY"),
     UserId.big_integer().not_null(),
     AppId.big_integer().not_null(),
-    Playtime.integer().not_null(),
+    Playtime.integer().not_null();
+    Self.foreign_key(fk!(SteamUsers, UserId, Cascade, Cascade))
+      .foreign_key(fk!(SteamApps, AppId, Cascade, Cascade))
+      .index(uk!(UserId, AppId))
   }
 
-  #[table("steam_playhist")]
   pub enum SteamPlayhist {
-    PlaydataId, UtcDay, Playtime,
-  }
-
-  // TODO: Move to discord? or separate
-  #[table("steam_discord_roles")]
-  pub enum SteamDiscordRoles {
-    GuildId, RoleId, AppId,
+    PlaydataId.big_integer().not_null(),
+    UtcDay.integer().not_null(),
+    Playtime.integer().not_null();
+    Self.foreign_key(fk!(SteamPlaydata, PlaydataId, Cascade, Cascade))
+      .index(uk!(PlaydataId, UtcDay))
   }
 }

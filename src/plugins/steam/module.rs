@@ -35,7 +35,8 @@ module! {
   fn init(fw) {
     APIKEY.set(env!("STEAMAPI_KEY"))?;
     fw.req::<SvgUi>()?;
-    fw.req::<Postgres>()?;
+    let pg = fw.req::<Postgres>()?;
+    pg.create_tables(&mut super::schema::create_tables());
     let poise = fw.req::<Poise>()?;
     poise.add_command(steam());
     poise.add_event_handler(roles());
@@ -70,15 +71,15 @@ fn roles() -> EventHandler {
 pub async fn get_roles(m: &Member) -> Res<Vec<RoleId>> {
   use crate::plugins::*;
   let mut qb = Query::select();
-  qb.from(steam::schema::SteamDiscordRoles::Table);
+  qb.from(discord_roles::schema::DiscordRolesSteam::Table);
   qb.from(steam::schema::SteamPlaydata::Table);
   qb.from(neko::schema::NekoUsersSteam::Table);
   qb.from(neko::schema::NekoUsersDiscord::Table);
-  qb.column(col!(steam::schema::SteamDiscordRoles, RoleId));
+  qb.column(col!(discord_roles::schema::DiscordRolesSteam, RoleId));
 
-  qb.cond_where(ex_col!(steam::schema::SteamDiscordRoles, GuildId).eq(m.guild_id.0 as i64));
+  qb.cond_where(ex_col!(discord_roles::schema::DiscordRolesSteam, GuildId).eq(m.guild_id.0 as i64));
   qb.cond_where(
-    ex_col!(steam::schema::SteamDiscordRoles, AppId)
+    ex_col!(discord_roles::schema::DiscordRolesSteam, AppId)
       .equals(col!(steam::schema::SteamPlaydata, AppId)),
   );
   qb.cond_where(

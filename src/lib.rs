@@ -12,12 +12,10 @@ pub mod macros;
 pub mod core {
   use std::error::Error;
 
+  #[macro_use]
+  #[path="../framework.rs"]
   mod framework;
   pub use framework::*;
-  #[macro_use]
-  mod module;
-  pub use module::*;
-  mod state;
 
   pub type Err = Box<dyn Error + Send + Sync>;
   pub type Res<T> = Result<T, Err>;
@@ -61,7 +59,7 @@ pub mod plugins {
   plugins!(discord_cache, [schema], DiscordCache);
   plugins!(discord_roles, [schema], DiscordRoles);
   plugins!(discord_welcomer, [schema], DiscordWelcomer);
-  plugins!(drg, [wrapper], DeepRockGalactic);
+  plugins!(drg, [poise, wrapper], DeepRockGalactic);
   plugins!(ftv, FemboyTV);
   plugins!(mnts, Maintenance);
   plugins!(neko, [query, schema], Gwaaa);
