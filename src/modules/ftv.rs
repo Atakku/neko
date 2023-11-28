@@ -8,7 +8,7 @@ use poise::{
 };
 
 pub const GUILD: GuildId = GuildId(1038789193113014333);
-const GENERAL: ChannelId = ChannelId(1038997543515865148);
+const GENERAL: ChannelId = ChannelId(1178857392033759262);
 
 /// Module with femboy.tv discord server functionality
 pub struct FemboyTV;
