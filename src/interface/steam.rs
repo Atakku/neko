@@ -28,7 +28,7 @@ pub struct App {
 api!(ISteamUser, "https://api.steampowered.com/ISteamUser/", {
   fn get_player_summaries("GetPlayerSummaries/v2") -> Response<GetPlayerSummaries> {
     key: &String,
-    steamids: &String,
+    steamids: String,
   };
 });
 

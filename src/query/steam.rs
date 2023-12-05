@@ -37,23 +37,22 @@ pub async fn update_users(user_list: &Vec<(i64,)>) -> R {
   log::info!("Updating Steam users");
   let mut profiles = vec![];
   for chunk in user_list.chunks(100) {
-    match req()
+    match futures::join!(req()
       .get_player_summaries(
         sapi_key(),
-        &chunk
+        chunk
           .into_iter()
           .map(|i| i.0.to_string())
           .collect::<Vec<String>>()
           .join(","),
-      )
-      .await
+      ), ratelimit())
     {
-      Ok(res) => {
+      (Ok(res), _) => {
         for user in res.response.players {
           profiles.push((user.id.parse::<i64>()?, user.name));
         }
       }
-      Err(err) => log::warn!("Failed to get '{}' profile summaries: {err}", chunk.len()),
+      (Err(err), _) => log::warn!("Failed to get '{}' profile summaries: {err}", chunk.len()),
     }
   }
   for chunk in profiles.chunks(10000) {
@@ -71,6 +70,10 @@ pub async fn update_users(user_list: &Vec<(i64,)>) -> R {
   Ok(())
 }
 
+async fn ratelimit() {
+  std::thread::sleep(std::time::Duration::from_millis(1600));
+}
+
 pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
   // Yes a day, is never exactly the same, but I just need to round the timestamp to current day
   let day = (Utc::now().timestamp() / 86400) as i32;
@@ -78,9 +81,8 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
   let mut games = HashMap::new();
   let mut playdata = vec![];
   for user in user_list {
-    if let Ok(res) = req()
-      .get_owned_games(sapi_key(), user.0 as u64, true, true)
-      .await
+    if let (Ok(res), _) = futures::join!(req()
+      .get_owned_games(sapi_key(), user.0 as u64, true, true), ratelimit())
     {
       for game in res.response.games {
         games.insert(game.id as i64, game.name);
