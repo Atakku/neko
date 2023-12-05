@@ -3,9 +3,15 @@
 // This project is dual licensed under MIT and Apache.
 
 use crate::{
-  core::*, plugins::steam::{sapi_key, wrapper::{get_app_list, get_owned_games, get_player_summaries}},
+  core::*,
+  plugins::{
+    steam::{
+      sapi_key,
+      wrapper::{get_app_list, get_owned_games, get_player_summaries},
+    },
+    *,
+  },
 };
-use crate::plugins::*;
 use chrono::Utc;
 use poise::ChoiceParameter;
 use sea_query::{Alias, Expr, Func, OnConflict, Order, Query, SelectStatement, WindowStatement};
@@ -31,26 +37,31 @@ pub async fn update_apps() -> R {
   Ok(())
 }
 
+async fn ratelimit() {
+  std::thread::sleep(std::time::Duration::from_millis(1600));
+}
+
 pub async fn update_users(user_list: &Vec<(i64,)>) -> R {
   log::info!("Updating Steam users");
   let mut profiles = vec![];
   for chunk in user_list.chunks(100) {
-    match get_player_summaries(
+    match futures::join!(
+      get_player_summaries(
         sapi_key(),
-        &chunk
+        chunk
           .into_iter()
           .map(|i| i.0.to_string())
           .collect::<Vec<String>>()
           .join(","),
-      )
-      .await
-    {
-      Ok(res) => {
+      ),
+      ratelimit()
+    ) {
+      (Ok(res), _) => {
         for user in res.response.players {
           profiles.push((user.id.parse::<i64>()?, user.name));
         }
       }
-      Err(err) => log::warn!("Failed to get '{}' profile summaries: {err}", chunk.len()),
+      (Err(err), _) => log::warn!("Failed to get '{}' profile summaries: {err}", chunk.len()),
     }
   }
   for chunk in profiles.chunks(10000) {
@@ -58,7 +69,11 @@ pub async fn update_users(user_list: &Vec<(i64,)>) -> R {
     let mut qb = Query::insert();
     qb.into_table(Table);
     qb.columns([UserId, Username]);
-    qb.on_conflict(OnConflict::column(UserId).update_column(Username).to_owned());
+    qb.on_conflict(
+      OnConflict::column(UserId)
+        .update_column(Username)
+        .to_owned(),
+    );
     for v in chunk {
       qb.values([v.0.into(), v.1.clone().into()])?;
     }
@@ -75,10 +90,10 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
   let mut games = HashMap::new();
   let mut playdata = vec![];
   for user in user_list {
-    if let Ok(res) = 
-      get_owned_games(sapi_key(), user.0 as u64, true, true)
-      .await
-    {
+    if let (Ok(res), _) = futures::join!(
+      get_owned_games(sapi_key(), user.0 as u64, true, true),
+      ratelimit()
+    ) {
       for game in res.response.games {
         games.insert(game.id as i64, game.name);
         playdata.push((user.0, game.id as i64, game.playtime as i32));
@@ -177,7 +192,10 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
       qb.from(DiscordCacheGuilds::Table);
       qb.and_where(ex_col!(DiscordCacheGuilds, GuildId).equals(col!(DiscordCacheMembers, GuildId)));
       qb.group_by_col(col!(DiscordCacheGuilds, GuildId));
-      qb.columns([col!(DiscordCacheGuilds, GuildId), col!(DiscordCacheGuilds, Name)]);
+      qb.columns([
+        col!(DiscordCacheGuilds, GuildId),
+        col!(DiscordCacheGuilds, Name),
+      ]);
     }
     Of::Users => {
       use discord_cache::schema::DiscordCacheUsers;
@@ -185,7 +203,10 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
       qb.from(DiscordCacheUsers::Table);
       qb.and_where(ex_col!(DiscordCacheUsers, UserId).equals(col!(NekoUsersDiscord, DiscordId)));
       qb.group_by_col(col!(DiscordCacheUsers, UserId));
-      qb.columns([col!(DiscordCacheUsers, UserId), col!(DiscordCacheUsers, Name)]);
+      qb.columns([
+        col!(DiscordCacheUsers, UserId),
+        col!(DiscordCacheUsers, Name),
+      ]);
     }
   }
   {
@@ -213,7 +234,9 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
   }
   match at {
     At::User(id) => qb.and_where(ex_col!(neko::schema::NekoUsersDiscord, DiscordId).eq(id)),
-    At::Guild(id) => qb.and_where(ex_col!(discord_cache::schema::DiscordCacheMembers, GuildId).eq(id)),
+    At::Guild(id) => {
+      qb.and_where(ex_col!(discord_cache::schema::DiscordCacheMembers, GuildId).eq(id))
+    }
     At::App(id) => qb.and_where(ex_col!(steam::schema::SteamPlaydata, AppId).eq(id)),
     At::None => &qb,
   };
