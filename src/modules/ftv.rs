@@ -4,7 +4,8 @@
 
 use crate::{core::*, modules::poise::Poise};
 use poise::{
-  serenity_prelude::{ChannelId, Colour, GuildId, User}, BoxFuture, Event,
+  serenity_prelude::{ChannelId, Colour, GuildId, ReactionType, User},
+  BoxFuture, Event,
 };
 
 pub const GUILD: GuildId = GuildId(1038789193113014333);
@@ -19,6 +20,66 @@ impl Module for FemboyTV {
     poise.event_handlers.push(welcomer);
     Ok(())
   }
+}
+
+const ROLES: &[(&str, &[(u64, &str, &str)])] = &[
+  (
+    "Pick your color role:",
+    &[(1122082509493121084, "Blossom", "🌸")],
+  ),
+  (
+    "Pick your country role:",
+    &[
+      (1062671646915297330, "United Kingdom", "🇬🇧"),
+      (1062671650342060053, "Netherlands", "🇳🇱"),
+      (1062671867015610388, "Italy", "🇮🇹"),
+      (1062671639436865557, "Spain", "🇪🇸"),
+      (1062671151903547432, "Russia", "🇷🇺"),
+      (1062671883935428628, "Serbia", "🇷🇸"),
+      (1062671879015497789, "France", "🇫🇷"),
+      (1123962805922562098, "United States", "🇺🇸"),
+      (1123962799958282360, "Germany", "🇩🇪"),
+      (1123962798616096818, "Bosnia & Herzegovina", "🇧🇦"),
+      (1123962803317903380, "Poland", "🇵🇱"),
+      (1123962795692671008, "Portugal", "🇵🇹"),
+      (1123962807155695646, "Denmark", "🇩🇰"),
+      (1123962810922180648, "Turkey", "🇹🇷"),
+      (1123962797458468924, "Czechia", "🇨🇿"),
+      (1123962809328353440, "Lithuania", "🇱🇹"),
+      (1123962804601360384, "Canada", "🇨🇦"),
+      (1123962802298704014, "Ireland", "🇮🇪"),
+    ],
+  ),
+];
+
+#[poise::command(prefix_command, hide_in_help, owners_only)]
+async fn spawn_roles(ctx: crate::modules::poise::Ctx<'_>) -> R {
+  for category in ROLES {
+    ctx
+      .send(|b| {
+        b.content(category.0).components(|b| {
+          b.create_action_row(|b| {
+            b.create_select_menu(|m| {
+              m.options(|f| {
+                let mut f = f;
+                for role in category.1 {
+                  f = f.create_option(|o| {
+                    o.emoji(ReactionType::Unicode(role.2.to_string()))
+                      .label(role.1)
+                      .value(role.0)
+                  });
+                }
+                f
+              })
+            })
+          })
+        })
+      })
+      .await?
+      .into_message()
+      .await?;
+  }
+  Ok(())
 }
 
 fn welcomer<'a>(c: &'a poise::serenity_prelude::Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
