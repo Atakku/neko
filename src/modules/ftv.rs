@@ -18,6 +18,7 @@ impl Module for FemboyTV {
   fn init(&mut self, fw: &mut Framework) -> R {
     let poise = fw.req_module::<Poise>()?;
     poise.event_handlers.push(welcomer);
+    poise.commands.push(spawn_roles());
     Ok(())
   }
 }
