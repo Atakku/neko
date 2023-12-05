@@ -82,7 +82,7 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
   let mut playdata = vec![];
   for user in user_list {
     if let (Ok(res), _) = futures::join!(req()
-      .get_owned_games(sapi_key(), user.0 as u64, true, true), ratelimit())
+      .get_owned_games(sapi_key(), user.0 as u64, true, true, false), ratelimit())
     {
       for game in res.response.games {
         games.insert(game.id as i64, game.name);

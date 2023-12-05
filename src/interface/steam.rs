@@ -56,6 +56,7 @@ api!(IPlayerService, "https://api.steampowered.com/IPlayerService/", {
     steamid: u64,
     include_appinfo: bool,
     include_played_free_games: bool,
+    skip_unvetted_apps: bool,
   };
   fn get_steam_level("GetSteamLevel/v1") -> Response<GetSteamLevel> {
     key: String,
