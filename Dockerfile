@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/li
 # Cache dependencies by making a fake project
 COPY Cargo.toml Cargo.toml
 RUN <<EOF
-mkdir src && touch src/lib.rs
+mkdir src && touch src/main.rs
 cargo build --release
 rm -rf src Cargo.toml
 EOF
