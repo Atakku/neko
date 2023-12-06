@@ -2,9 +2,10 @@
 //
 // This project is dual licensed under MIT and Apache.
 
+use itertools::Itertools;
 use crate::{core::*, modules::poise::Poise};
 use poise::{
-  serenity_prelude::{ChannelId, Colour, GuildId, ReactionType, User},
+  serenity_prelude::{ChannelId, Colour, GuildId, ReactionType, User, RoleId, InteractionResponseType},
   BoxFuture, Event,
 };
 
@@ -25,11 +26,11 @@ impl Module for FemboyTV {
 
 const ROLES: &[(&str, &str, &[(u64, &str, &str)])] = &[
   (
-    "pick_color", "Pick your color role:",
+    "pick_color", "# Pick your color role:",
     &[(1122082509493121084, "Blossom", "🌸")],
   ),
   (
-    "pick_country", "Pick your country role:",
+    "pick_country", "# Pick your country role:",
     &[
       (1062671646915297330, "United Kingdom", "🇬🇧"),
       (1062671650342060053, "Netherlands", "🇳🇱"),
@@ -61,7 +62,7 @@ async fn spawn_roles(ctx: crate::modules::poise::Ctx<'_>) -> R {
         b.content(category.1).components(|b| {
           b.create_action_row(|b| {
             b.create_select_menu(|m| {
-              m.custom_id(category.0).options(|f| {
+              m.custom_id(category.0).min_values(0).max_values(category.2.len().min(25) as u64).options(|f| {
                 let mut f = f;
                 for role in category.2 {
                   f = f.create_option(|o| {
@@ -89,8 +90,39 @@ fn welcomer<'a>(c: &'a poise::serenity_prelude::Context, event: &'a Event<'a>) -
     match event {
       InteractionCreate { interaction } => {
         if let poise::serenity_prelude::Interaction::MessageComponent(i) = interaction {
-          if i.data.custom_id.starts_with("pick_") {
-            println!("{:?}", i.data.values);
+          if let Some(g) = &i.guild_id {
+            for r in ROLES {
+              if i.data.custom_id == r.0 {
+                if let Ok(mut m) = g.member(c, i.user.id).await {
+                  let all_roles: Vec<RoleId> = r.2.iter().map(|rr| RoleId::from(rr.0)).collect();
+                  let current_roles: Vec<RoleId> = m.roles.iter().filter(|rr| all_roles.contains(rr)).cloned().collect();
+                  let target_roles: Vec<RoleId> = all_roles.iter().filter(|rr| i.data.values.contains(&rr.0.to_string())).cloned().collect();
+
+                  let rem_roles: Vec<RoleId> = current_roles.iter().filter(|x|!target_roles.contains(x)).cloned().collect();
+                  m.remove_roles(&c, rem_roles.as_slice()).await?;
+
+                  let add_roles: Vec<RoleId> = target_roles.iter().filter(|x|!current_roles.contains(x)).cloned().collect();
+                  m.add_roles(&c, add_roles.as_slice()).await?;
+
+                  let rem = rem_roles.iter().map(|x|format!("<@&{}>", x.0)).join(", ");
+                  let add = add_roles.iter().map(|x|format!("<@&{}>", x.0)).join(", ");
+                  i.create_interaction_response(c, |a| {
+                    a.kind(InteractionResponseType::ChannelMessageWithSource).interaction_response_data(|d| {
+                      d.ephemeral(true).content({
+                        let mut msg = String::new();
+                        if rem_roles.len() > 0 {
+                          msg = format!("**Removed roles:** {rem}\n");
+                        }
+                        if add_roles.len() > 0 {
+                          msg += &format!("**Added roles:** {add}\n");
+                        }
+                        msg
+                      })
+                    })
+                  }).await?;
+                }
+              }
+            }
           }
         }
       },

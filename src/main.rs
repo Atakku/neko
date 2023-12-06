@@ -14,13 +14,13 @@ async fn main() -> R {
   #[cfg(not(debug_assertions))]  
   {
     fw.init_module(atakku::Atakku)?;
-    fw.init_module(ftv::FemboyTV)?;
     fw.init_module(discord::Discord)?;
     fw.init_module(steam::Steam)?;
     fw.init_module(anilist::AniList)?;
     fw.init_module(drg::DeepRockGalactic)?;
+    fw.init_module(gwaaa::Gwaaa {})?;
   }
-  fw.init_module(gwaaa::Gwaaa {})?;
+  fw.init_module(ftv::FemboyTV)?;
   fw.run().await?;
   Ok(())
 }
