@@ -1,6 +1,13 @@
+#syntax=docker/dockerfile:1.3-labs
 FROM docker.io/rustlang/rust:nightly-slim as builder
 WORKDIR /build
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+# Cache dependencies by making a fake project
+RUN <<EOF
+mkdir src && touch src/lib.rs
+cargo build --release
+rm -rf src Cargo.toml
+EOF
 COPY . .
 RUN cargo build --release
 FROM debian:11-slim

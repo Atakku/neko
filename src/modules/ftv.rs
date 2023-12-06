@@ -25,11 +25,11 @@ impl Module for FemboyTV {
 
 const ROLES: &[(&str, &str, &[(u64, &str, &str)])] = &[
   (
-    "picker_color", "Pick your color role:",
+    "pick_color", "Pick your color role:",
     &[(1122082509493121084, "Blossom", "🌸")],
   ),
   (
-    "picker_country", "Pick your country role:",
+    "pick_country", "Pick your country role:",
     &[
       (1062671646915297330, "United Kingdom", "🇬🇧"),
       (1062671650342060053, "Netherlands", "🇳🇱"),
@@ -87,6 +87,9 @@ fn welcomer<'a>(c: &'a poise::serenity_prelude::Context, event: &'a Event<'a>) -
   Box::pin(async move {
     use Event::*;
     match event {
+      InteractionCreate { interaction } => {
+        println!("{:?}", interaction);
+      },
       GuildMemberAddition { new_member: m } => {
         if !m.user.bot && m.guild_id == GUILD {
           let u = &m.user;
