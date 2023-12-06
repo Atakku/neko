@@ -117,9 +117,9 @@ async fn spawn_roles(ctx: crate::modules::poise::Ctx<'_>) -> R {
                   f = f.create_option(|o| {
                     o.emoji({
                       if role.3 {
-                        ReactionType::Unicode(role.2.to_string())
-                      } else {  
                         EmojiId(role.2.parse().unwrap_or(1049347516346400858)).into()
+                      } else {  
+                        ReactionType::Unicode(role.2.to_string())
                       }
                     })
                       .label(role.1)
