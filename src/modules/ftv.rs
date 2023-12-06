@@ -88,7 +88,11 @@ fn welcomer<'a>(c: &'a poise::serenity_prelude::Context, event: &'a Event<'a>) -
     use Event::*;
     match event {
       InteractionCreate { interaction } => {
-        println!("{:?}", interaction);
+        if let poise::serenity_prelude::Interaction::MessageComponent(i) = interaction {
+          if i.data.custom_id.starts_with("pick_") {
+            println!("{:?}", i.data.values);
+          }
+        }
       },
       GuildMemberAddition { new_member: m } => {
         if !m.user.bot && m.guild_id == GUILD {
