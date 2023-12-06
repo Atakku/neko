@@ -5,7 +5,7 @@
 use itertools::Itertools;
 use crate::{core::*, modules::poise::Poise};
 use poise::{
-  serenity_prelude::{ChannelId, Colour, GuildId, ReactionType, User, RoleId, InteractionResponseType},
+  serenity_prelude::{ChannelId, Colour, GuildId, ReactionType, User, RoleId, InteractionResponseType, EmojiId},
   BoxFuture, Event,
 };
 
@@ -24,34 +24,83 @@ impl Module for FemboyTV {
   }
 }
 
-const ROLES: &[(&str, &str, &[(u64, &str, &str)])] = &[
+const ROLES: &[(&str, &str, &[(u64, &str, &str, bool)])] = &[
   (
-    "pick_color", "# Pick your color role:",
-    &[(1122082509493121084, "Blossom", "🌸")],
-  ),
-  (
-    "pick_country", "# Pick your country role:",
+    "pick_badge", "# Pick your badge roles:",
     &[
-      (1062671646915297330, "United Kingdom", "🇬🇧"),
-      (1062671650342060053, "Netherlands", "🇳🇱"),
-      (1062671867015610388, "Italy", "🇮🇹"),
-      (1062671639436865557, "Spain", "🇪🇸"),
-      (1062671151903547432, "Russia", "🇷🇺"),
-      (1062671883935428628, "Serbia", "🇷🇸"),
-      (1062671879015497789, "France", "🇫🇷"),
-      (1123962805922562098, "United States", "🇺🇸"),
-      (1123962799958282360, "Germany", "🇩🇪"),
-      (1123962798616096818, "Bosnia & Herzegovina", "🇧🇦"),
-      (1123962803317903380, "Poland", "🇵🇱"),
-      (1123962795692671008, "Portugal", "🇵🇹"),
-      (1123962807155695646, "Denmark", "🇩🇰"),
-      (1123962810922180648, "Turkey", "🇹🇷"),
-      (1123962797458468924, "Czechia", "🇨🇿"),
-      (1123962809328353440, "Lithuania", "🇱🇹"),
-      (1123962804601360384, "Canada", "🇨🇦"),
-      (1123962802298704014, "Ireland", "🇮🇪"),
+      (1142188267643600907, "🏳️‍⚧️🏳️‍⚧️🏳️‍⚧️🏳️‍⚧️🏳️‍⚧️🏳️‍⚧️🏳️‍⚧️🏳️‍⚧️🏳️‍⚧️🏳️‍⚧️🏳️‍⚧️", "🏳️‍⚧️", false),
+      (1142188265835868244, "🫑🫑🫑🫑🫑🫑🫑🫑🫑🫑🫑", "🫑", false),
     ],
   ),
+  (
+    "pick_color", "# Pick your color role:",
+    &[
+      (1122082509493121084, "Blossom", "🌸", false),
+      (1122082527956439081, "Carnation", "🌺", false),
+      (1122082529797734420, "Watermelon", "🍉", false),
+      (1122082515356745808, "Apricot", "🍑", false),
+      (1122082535032225866, "Chocolate", "🍫", false),
+      (1122082536101777412, "Tangerine", "🍊", false),
+      (1122082579256983623, "Amber", "🔥", false),
+      (1122082516464042068, "Sunny", "☀️", false),
+      (1122082533329354762, "Sunflower", "🌻", false),
+      (1122082527297941544, "Creamy", "🍦", false),
+      (1122082522277351485, "Lime", "🍃", false),
+      (1122082518473121802, "Mint", "🌿", false),
+      (1122082531630661743, "Teal", "🧪", false),
+      (1122082519580413953, "Turquoise", "💎", false),
+      (1122082520910012487, "Oceanic", "🌊", false),
+      (1122082537922109440, "Sky", "☁️", false),
+      (1122082526299688961, "Royal", "👑", false),
+      (1122082523615346698, "Lavender", "🌸", false),
+      (1122082524944945203, "Grape", "🍇", false),
+      (1122082581895184404, "Cherry", "🍒", false),
+    ],
+  ),
+  (
+    "pick_country", "# Pick your country roles:",
+    &[
+      (1062671646915297330, "United Kingdom", "🇬🇧", false),
+      (1062671650342060053, "Netherlands", "🇳🇱", false),
+      (1062671867015610388, "Italy", "🇮🇹", false),
+      (1062671639436865557, "Spain", "🇪🇸", false),
+      (1062671151903547432, "Russia", "🇷🇺", false),
+      (1062671883935428628, "Serbia", "🇷🇸", false),
+      (1062671879015497789, "France", "🇫🇷", false),
+      (1123962805922562098, "United States", "🇺🇸", false),
+      (1123962799958282360, "Germany", "🇩🇪", false),
+      (1123962798616096818, "Bosnia & Herzegovina", "🇧🇦", false),
+      (1123962803317903380, "Poland", "🇵🇱", false),
+      (1123962795692671008, "Portugal", "🇵🇹", false),
+      (1123962807155695646, "Denmark", "🇩🇰", false),
+      (1123962810922180648, "Turkey", "🇹🇷", false),
+      (1123962797458468924, "Czechia", "🇨🇿", false),
+      (1123962809328353440, "Lithuania", "🇱🇹", false),
+      (1123962804601360384, "Canada", "🇨🇦", false),
+      (1123962802298704014, "Ireland", "🇮🇪", false),
+    ],
+  ),
+  (
+    "pick_interest", "# Pick your interest roles:",
+    &[
+      (1123962812276936724, "Femboys", "🌸", false),
+      (1123962816949391360, "Programming", "💻", false),
+      (1123962819197554789, "Gaming", "🎮", false),
+      (1123962821454086175, "Drawing", "🎨", false),
+    ],
+  ),
+  //(
+  //  "pick_hmd", "# Pick your VR headset roles:",
+  //  &[
+  //    (1041462150297825351, "No HMD", "❌", false),
+  //  ],
+  //),
+  //(
+  //  "pick_fbt", "# Pick your VR FBT roles:",
+  //  &[
+  //    (1124283639514026097, "No FBT", "❌", false),
+  //  ],
+  //),
 ];
 
 #[poise::command(prefix_command, hide_in_help, owners_only)]
@@ -66,7 +115,13 @@ async fn spawn_roles(ctx: crate::modules::poise::Ctx<'_>) -> R {
                 let mut f = f;
                 for role in category.2 {
                   f = f.create_option(|o| {
-                    o.emoji(ReactionType::Unicode(role.2.to_string()))
+                    o.emoji({
+                      if role.3 {
+                        ReactionType::Unicode(role.2.to_string())
+                      } else {  
+                        EmojiId(role.2.parse().unwrap_or(1049347516346400858)).into()
+                      }
+                    })
                       .label(role.1)
                       .value(role.0)
                   });
