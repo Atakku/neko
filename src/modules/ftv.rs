@@ -149,6 +149,7 @@ fn welcomer<'a>(c: &'a poise::serenity_prelude::Context, event: &'a Event<'a>) -
             for r in ROLES {
               if i.data.custom_id == r.0 {
                 if let Ok(mut m) = g.member(c, i.user.id).await {
+                  i.defer(c).await?;
                   let all_roles: Vec<RoleId> = r.2.iter().map(|rr| RoleId::from(rr.0)).collect();
                   let current_roles: Vec<RoleId> = m.roles.iter().filter(|rr| all_roles.contains(rr)).cloned().collect();
                   let target_roles: Vec<RoleId> = all_roles.iter().filter(|rr| i.data.values.contains(&rr.0.to_string())).cloned().collect();
