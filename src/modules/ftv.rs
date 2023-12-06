@@ -23,13 +23,13 @@ impl Module for FemboyTV {
   }
 }
 
-const ROLES: &[(&str, &[(u64, &str, &str)])] = &[
+const ROLES: &[(&str, &str, &[(u64, &str, &str)])] = &[
   (
-    "Pick your color role:",
+    "picker_color", "Pick your color role:",
     &[(1122082509493121084, "Blossom", "🌸")],
   ),
   (
-    "Pick your country role:",
+    "picker_country", "Pick your country role:",
     &[
       (1062671646915297330, "United Kingdom", "🇬🇧"),
       (1062671650342060053, "Netherlands", "🇳🇱"),
@@ -58,12 +58,12 @@ async fn spawn_roles(ctx: crate::modules::poise::Ctx<'_>) -> R {
   for category in ROLES {
     ctx
       .send(|b| {
-        b.content(category.0).components(|b| {
+        b.content(category.1).components(|b| {
           b.create_action_row(|b| {
             b.create_select_menu(|m| {
-              m.options(|f| {
+              m.custom_id(category.0).options(|f| {
                 let mut f = f;
-                for role in category.1 {
+                for role in category.2 {
                   f = f.create_option(|o| {
                     o.emoji(ReactionType::Unicode(role.2.to_string()))
                       .label(role.1)
