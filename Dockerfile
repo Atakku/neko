@@ -3,6 +3,7 @@ FROM docker.io/rustlang/rust:nightly-slim as builder
 WORKDIR /build
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 # Cache dependencies by making a fake project
+COPY Cargo.toml Cargo.toml
 RUN <<EOF
 mkdir src && touch src/lib.rs
 cargo build --release
