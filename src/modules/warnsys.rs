@@ -36,32 +36,35 @@ async fn warn(ctx: crate::modules::poise::Ctx<'_>, user: UserId, reason: String)
     }
     warnsys::add_user_warning(user.0 as i64, &reason).await?;
     let warns = warnsys::active_user_warnings(user.0 as i64).await?.len();
-    let time = match warns {
+    let (time, future) = match warns {
       0 => {// Should never happen, but what if something goes wrong
-        Duration::minutes(1)
+        (Duration::minutes(1), "1 minute")
       }
       1 => {
-        Duration::minutes(5)
+        (Duration::minutes(5), "5 minutes")
       }
       2 => {
-        Duration::minutes(30)
+        (Duration::minutes(30), "30 minutes")
       }
       3 => {
-        Duration::hours(4)
+        (Duration::hours(6), "6 hours")
       }
       4 => {
-        Duration::days(1)
+        (Duration::days(1), "1 day")
       }
       5 => {
-        Duration::days(6)
+        (Duration::days(3), "3 days")
+      }
+      6 => {
+        (Duration::days(6), "6 days")
       }
       _ => {
-        Duration::days(24)
+        (Duration::days(24), "24 days")
       }
     };
     let time = Utc::now().add(time);
     let ts = time.timestamp();
-    ctx.reply(format!("Warned <@{}> with `{reason}`, they are now at {warns} warnings, and timed out until <t:{ts}>\nThey will be able to speak again <t:{ts}:R>", user.0)).await?;
+    ctx.reply(format!("**Warned** <@{}> with `{reason}`\nThey are now at **{warns} warnings**, and timed out until <t:{ts}>\nA future timeout will last for **{future}**\nThey will be able to speak again <t:{ts}:R>", user.0)).await?;
     GUILD.member(ctx, user).await?.disable_communication_until_datetime(ctx, time.into()).await?;
   }
   Ok(())
