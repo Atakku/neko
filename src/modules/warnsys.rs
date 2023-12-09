@@ -6,6 +6,7 @@ use std::ops::Add;
 
 use crate::{core::*, modules::poise::Poise, query::warnsys};
 use chrono::{Utc, Duration};
+use itertools::Itertools;
 use poise::serenity_prelude::{GuildId, RoleId, UserId};
 
 const GUILD: GuildId = GuildId(1038789193113014333);
@@ -18,8 +19,41 @@ impl Module for WarnSystem {
   fn init(&mut self, fw: &mut Framework) -> R {
     let poise = fw.req_module::<Poise>()?;
     poise.commands.push(warn());
+    poise.commands.push(rm_warn());
+    poise.commands.push(warns());
     Ok(())
   }
+}
+
+#[poise::command(slash_command)]
+async fn warns(ctx: crate::modules::poise::Ctx<'_>, user: UserId) -> R {
+  if ctx.guild_id() != Some(GUILD) {
+    ctx.reply("This command is only permitted in femboy.tv").await?;
+    return Ok(())
+  }
+  let mut warns = warnsys::active_user_warnings(user.0 as i64).await?;
+  warns.sort_by_key(|(_, x, _)| x.clone());
+  let content = warns.iter().map(|(id, ts, res)| format!("{id} | {ts} | {res}")).join("\n");
+  ctx.reply(format!("```\n{content}\n```")).await?;
+  Ok(())
+}
+
+#[poise::command(slash_command)]
+async fn rm_warn(ctx: crate::modules::poise::Ctx<'_>, id: String) -> R {
+  if ctx.guild_id() != Some(GUILD) {
+    ctx.reply("This command is only permitted in femboy.tv").await?;
+    return Ok(())
+  }
+  if let Some(m) = ctx.author_member().await {
+    let roles = GUILD.member(ctx, m.user.id).await?.roles;
+    if !roles.contains(&ROLE) {
+      ctx.reply("You are not a moderator").await?;
+      return Ok(())
+    }
+    warnsys::rm_warn(id.parse()?).await?;
+    ctx.reply(format!("Removed warn with id {id}")).await?;
+  }
+  Ok(())
 }
 
 #[poise::command(slash_command)]
