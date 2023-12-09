@@ -19,6 +19,7 @@ async fn main() -> R {
     fw.init_module(anilist::AniList)?;
     fw.init_module(drg::DeepRockGalactic)?;
     fw.init_module(gwaaa::Gwaaa {})?;
+    fw.init_module(warnsys::WarnSystem {})?;
   }
   fw.init_module(ftv::FemboyTV)?;
   fw.run().await?;
