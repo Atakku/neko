@@ -22,7 +22,7 @@ impl Module for WarnSystem {
   }
 }
 
-#[poise::command(prefix_command)]
+#[poise::command(slash_command)]
 async fn warn(ctx: crate::modules::poise::Ctx<'_>, user: UserId, reason: String) -> R {
   if ctx.guild_id() != Some(GUILD) {
     ctx.reply("This command is only permitted in femboy.tv").await?;
