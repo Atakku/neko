@@ -7,7 +7,7 @@ use futures::StreamExt;
 use super::poise::Poise;
 use crate::{
   core::*,
-  modules::{poise::Ctx, steam::{minor_update, get_roles, filter_roles}},
+  modules::{poise::Ctx, steam::{minor_update, get_roles, filter_roles}, beatleader::update_scores},
 };
 
 // Util module for maintenance commands
@@ -40,6 +40,16 @@ async fn update_steam(ctx: Ctx<'_>) -> R {
   Ok(())
 }
 
+#[poise::command(prefix_command, hide_in_help, owners_only)]
+async fn update_beatleader(ctx: Ctx<'_>) -> R {
+  let m = ctx.reply("Updating beatleader data...").await?;
+
+  update_scores().await?;
+
+  m.edit(ctx, |m| m.content("Done updating beatleader data!"))
+    .await?;
+  Ok(())
+}
 
 #[poise::command(prefix_command, hide_in_help, owners_only)]
 async fn update_roles(ctx: Ctx<'_>) -> R {
