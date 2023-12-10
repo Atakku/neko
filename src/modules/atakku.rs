@@ -19,6 +19,7 @@ impl Module for Atakku {
     poise.commands.push(register_commands());
     poise.commands.push(update_steam());
     poise.commands.push(update_roles());
+    poise.commands.push(update_beatleader());
     Ok(())
   }
 }
