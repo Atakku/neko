@@ -69,7 +69,7 @@ pub async fn beetleader(ctx: Ctx<'_>) -> R {
         Alias::new("row_num"),
       );
     }
-    qb.order_by(Alias::new("row_num"), Order::Desc);
+    qb.order_by(Alias::new("row_num"), Order::Asc);
     qb
   };
 
