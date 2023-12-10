@@ -164,7 +164,7 @@ pub async fn beetleader(ctx: Ctx<'_>) -> R {
 pub struct QueryOutput {
   pub row_num: i64,
   pub name: String,
-  pub pp: String,
+  pub pp: f32,
 }
 
 
