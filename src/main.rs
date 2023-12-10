@@ -11,7 +11,7 @@ async fn main() -> R {
   }
   pretty_env_logger::init();
   let mut fw = Framework::new();
-  #[cfg(not(debug_assertions))]  
+  #[cfg(not(debug_assertions))]
   {
     fw.init_module(atakku::Atakku)?;
     fw.init_module(discord::Discord)?;
@@ -20,6 +20,7 @@ async fn main() -> R {
     fw.init_module(drg::DeepRockGalactic)?;
     fw.init_module(gwaaa::Gwaaa {})?;
     fw.init_module(warnsys::WarnSystem {})?;
+    fw.init_module(beatleader::BeatLeader {})?;
   }
   fw.init_module(ftv::FemboyTV)?;
   fw.run().await?;

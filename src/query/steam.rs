@@ -70,7 +70,7 @@ pub async fn update_users(user_list: &Vec<(i64,)>) -> R {
   Ok(())
 }
 
-async fn ratelimit() {
+pub async fn ratelimit() {
   std::thread::sleep(std::time::Duration::from_millis(1600));
 }
 

@@ -3,8 +3,8 @@
 // This project is dual licensed under MIT and Apache.
 
 #![feature(trait_alias)]
-#![feature(async_fn_in_trait)]
 #![feature(async_closure)]
+#![feature(sort_floats)]
 
 #[macro_use]
 pub mod macros;

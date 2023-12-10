@@ -247,7 +247,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
       output += &format!("{} | {} | {}\n", d.row_num, d.sum_count / divider, d.name);
       if i == 0 && page != 0 {
         output += "-------------------\n"
-      } 
+      }
     }
     Ok(output)
   };
@@ -317,7 +317,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
   Ok(())
 }
 
-fn pagination_buttons(
+pub fn pagination_buttons(
   b: &mut CreateActionRow,
   page: u64,
   pages: u64,
