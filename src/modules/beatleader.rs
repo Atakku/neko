@@ -55,6 +55,7 @@ pub async fn beetleader(ctx: Ctx<'_>) -> R {
     qb.from(UsersDiscord::Table);
     qb.from(Users::Table);
     qb.from(BeetleaderLB::Table);
+    qb.and_where(ex_col!(Users, Id).equals(col!(UsersDiscord, DiscordId)));
     qb.and_where(ex_col!(UsersSteam, NekoId).equals(col!(UsersDiscord, NekoId)));
     qb.and_where(ex_col!(UsersSteam, SteamId).equals(col!(BeetleaderLB, SteamId)));
     qb.column(col!(Users, Name));
