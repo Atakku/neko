@@ -24,7 +24,7 @@ pub async fn radio(ctx: Ctx<'_>) -> R {
   let data = req().get_nowplaying().await?;
   let st = data.first().ok_or("No station data available")?;
   let np = &st.now_playing;
-  m.edit(ctx, |b| b.content(format!("Now playing:\nTitle: {}\nAlbum: {}\nArtist: {}\nPlayed: {}:{}/{}:{}", np.song.title, np.song.album, np.song.artist, np.elapsed/60, np.elapsed%60, np.remaining/60, np.remaining%60)))
+  m.edit(ctx, |b| b.content(format!("Now playing:\nTitle: {}\nAlbum: {}\nArtist: {}\nPlayed: {}:{}/{}:{}", np.song.title, np.song.album, np.song.artist, np.elapsed/60, np.elapsed%60, np.duration/60, np.duration%60)))
     .await?;
   Ok(())
 }
