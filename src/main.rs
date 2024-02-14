@@ -21,6 +21,7 @@ async fn main() -> R {
     fw.init_module(gwaaa::Gwaaa {})?;
     fw.init_module(warnsys::WarnSystem {})?;
     fw.init_module(beatleader::BeatLeader {})?;
+    fw.init_module(radio::Radio {})?;
   }
   fw.init_module(ftv::FemboyTV)?;
   fw.run().await?;
