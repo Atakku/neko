@@ -253,7 +253,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
   };
 
   let mut page = 0;
-  let firstpage = get_page(page).await?;
+  let firstpage = get_page.clone()(page).await?;
 
   msg
     .edit(ctx, |b| {
@@ -290,7 +290,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
       })
       .await?;
 
-    let pageee = get_page(page).await.unwrap();
+    let pageee = get_page.clone()(page).await.unwrap();
 
     let mut msg = press.get_interaction_response(ctx).await?;
     msg

@@ -96,7 +96,7 @@ pub async fn beetleader(ctx: Ctx<'_>) -> R {
   };
 
   let mut page = 0;
-  let firstpage = get_page(page).await?;
+  let firstpage = get_page.clone()(page).await?;
 
   msg
     .edit(ctx, |b| {
@@ -133,7 +133,7 @@ pub async fn beetleader(ctx: Ctx<'_>) -> R {
       })
       .await?;
 
-    let pageee = get_page(page).await.unwrap();
+    let pageee = get_page.clone()(page).await.unwrap();
 
     let mut msg = press.get_interaction_response(ctx).await?;
     msg
