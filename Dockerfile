@@ -14,7 +14,7 @@ RUN cargo build --release
 # Runner
 FROM docker.io/rustlang/rust:nightly-slim
 WORKDIR /app
-RUN apt-get update && apt-get install -y ca-certificates libssl1.1 openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates libssl3 openssl && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /build/target/release/neko /app/neko
 COPY --from=builder /build/sql /app/sql
 CMD ["./neko"]
