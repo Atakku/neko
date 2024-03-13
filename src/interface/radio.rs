@@ -2,7 +2,6 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use chrono::{DateTime, Utc};
 use serde::Deserialize;
 
 api!(RadioApi, "https://azuracast.atakku.dev/api/", {

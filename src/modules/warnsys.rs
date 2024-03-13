@@ -83,28 +83,28 @@ async fn warn(ctx: crate::modules::poise::Ctx<'_>, user: UserId, reason: String)
 fn match_warn<'a>(warns: usize) -> (Duration, &'a str) {
   match warns {
     0 => {// Should never happen, but what if something goes wrong
-      (Duration::minutes(1), "1 minute")
+      (Duration::try_minutes(1).unwrap(), "1 minute")
     }
     1 => {
-      (Duration::minutes(5), "5 minutes")
+      (Duration::try_minutes(5).unwrap(), "5 minutes")
     }
     2 => {
-      (Duration::minutes(30), "30 minutes")
+      (Duration::try_minutes(30).unwrap(), "30 minutes")
     }
     3 => {
-      (Duration::hours(6), "6 hours")
+      (Duration::try_hours(6).unwrap(), "6 hours")
     }
     4 => {
-      (Duration::days(1), "1 day")
+      (Duration::try_days(1).unwrap(), "1 day")
     }
     5 => {
-      (Duration::days(3), "3 days")
+      (Duration::try_days(3).unwrap(), "3 days")
     }
     6 => {
-      (Duration::days(6), "6 days")
+      (Duration::try_days(6).unwrap(), "6 days")
     }
     _ => {
-      (Duration::days(24), "24 days")
+      (Duration::try_days(24).unwrap(), "24 days")
     }
   }
 }
