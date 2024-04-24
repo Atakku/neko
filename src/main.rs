@@ -24,6 +24,7 @@ async fn main() -> R {
     fw.init_module(radio::Radio {})?;
   }
   fw.init_module(ftv::FemboyTV)?;
+  fw.init_module(nftv::NewFemboyTV)?;
   fw.run().await?;
   Ok(())
 }
