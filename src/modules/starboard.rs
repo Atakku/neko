@@ -111,7 +111,7 @@ async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
       edit_post(p, msg, m.author).await?;
     }
     None => {
-      if count > 5 {
+      if count >= 5 {
         let id = new_post(msg, m.author).await?.0;
         upsert_post(m.id.0 as i64, id as i64).await?;
       }
