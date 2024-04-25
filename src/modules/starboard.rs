@@ -68,13 +68,13 @@ async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
       webhook_msg(Some(p), format!("{react} x {count}")).await?.id.0;
     }
     None => {
-      if count > 1 {
+      //if count > 1 {
         info!("sending message");
         match webhook_msg(None, "test".into()).await {
             Ok(r) => upsert_post(m.id.0 as i64, r.id.0 as i64).await?,
             Result::Err(e) => error!("{e}"),
         }
-      }
+      //}
     }
   }
   info!("starboard_update2");
