@@ -5,12 +5,11 @@
 use crate::{core::*, modules::poise::Poise};
 use poise::{
   serenity_prelude::{
-    ButtonStyle, ChannelId, Colour, EditInteractionResponse, EmojiId, GuildId,
-    Interaction::MessageComponent, ReactionType, RoleId, User,
+    ButtonStyle, EmojiId,
+    Interaction::MessageComponent, ReactionType, RoleId,
   },
   BoxFuture, Event,
 };
-use std::path::Component;
 
 /// Module with femboy.tv discord server functionality
 pub struct FTVRoles;
@@ -88,7 +87,7 @@ async fn spawn_roles(ctx: crate::modules::poise::Ctx<'_>) -> R {
                     b.custom_id(role.0.to_string())
                       .emoji({
                         if role.2 {
-                          EmojiId(role.1.parse().unwrap_or(1049347516346400858)).into()
+                          EmojiId(role.1.parse().unwrap_or(1233072462527332363)).into()
                         } else {
                           ReactionType::Unicode(role.1.to_string())
                         }

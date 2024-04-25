@@ -326,7 +326,7 @@ pub fn pagination_buttons(
 ) -> &mut CreateActionRow {
   let l = ReactionType::Custom {
     animated: true,
-    id: poise::serenity_prelude::EmojiId(1110725977069326346),
+    id: poise::serenity_prelude::EmojiId(1233072462527332363),
     name: None,
   };
   b.create_button(|b| {
