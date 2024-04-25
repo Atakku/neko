@@ -4,6 +4,7 @@
 
 use super::{reqwest::{req, Reqwest}, sqlx::Postgres};
 use crate::{core::*, modules::poise::Poise, query::starboard::*};
+use log::{debug, info};
 use poise::{
   serenity_prelude::{ChannelId, Context, GatewayIntents, GuildId, Message, MessageId, ReactionType},
   BoxFuture, Event,
@@ -30,6 +31,7 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
     use Event::*;
     match event {
       ReactionAdd { add_reaction: e } => {
+        info!("ReactionAdd");
         if e.guild_id != Some(GuildId(1232659990993702943)) {
           return Ok(());
         }
@@ -38,6 +40,7 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
       ReactionRemove {
         removed_reaction: e,
       } => {
+        info!("ReactionRemove");
         if e.guild_id != Some(GuildId(1232659990993702943)) {
           return Ok(());
         }
@@ -49,6 +52,8 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
   })
 }
 async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
+  info!("starboard_update");
+
   let ch = m.channel(c).await?;
   let spoiler = ch.category().map(|c| c.id) == Some(ChannelId(1232824647834140712));
 
