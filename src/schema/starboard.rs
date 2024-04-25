@@ -5,19 +5,10 @@
 use sea_query::Iden;
 
 #[derive(Iden)]
-#[iden(rename = "starboard_messages")]
-pub enum Messages {
+#[iden(rename = "starboard_posts")]
+pub enum Posts {
   Table,
-  RepostId,
-  ChannelId,
-  MessageId,
+  SouceId,
+  PostId,
 }
 
-#[derive(Iden)]
-#[iden(rename = "starboard_reactions")]
-pub enum Reactions {
-  Table,
-  MessageId,
-  Reaction,
-  Count
-}
