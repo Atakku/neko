@@ -173,6 +173,16 @@ const ROLES: &[(&str, &[(u64, &str, bool, &str)])] = &[
     ],
   ),
   (
+    "# Interest roles:",
+    &[
+      (1233042183439777884, "🌸", false, "Femboys"),
+      (1233047149063962675, "💻", false, "Programming"),
+      (1233042181309206629, "🎮", false, "Gaming"),
+      (1233042182647320706, "🎨", false, "Drawing"),
+      (1233047520700006501, "🎵", false, "Music"),
+    ],
+  ),
+  (
     "# Country roles:\n### Europe:",
     &[
       (1232857578812211270, "🇷🇺", false, ""),
