@@ -4,7 +4,7 @@
 
 use super::{reqwest::{req, Reqwest}, sqlx::Postgres};
 use crate::{core::*, modules::poise::Poise, query::starboard::*};
-use log::{debug, info};
+use log::{debug, error, info};
 use poise::{
   serenity_prelude::{ChannelId, Context, GatewayIntents, GuildId, Message, MessageId, ReactionType},
   BoxFuture, Event,
@@ -50,7 +50,6 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
   })
 }
 async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
-  info!("starboard_update");
 
   let ch = m.channel(c).await?;
   let spoiler = ch.category().map(|c| c.id) == Some(ChannelId(1232824647834140712));
@@ -63,7 +62,6 @@ async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
   else {
     return Ok(());
   };
-  info!("starboard_update1");
 
   match get_post_id(m.id.0 as i64).await? {
     Some((p,)) => {
@@ -71,8 +69,11 @@ async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
     }
     None => {
       if count > 1 {
-        let id = webhook_msg(None, "test".into()).await?.id.0;
-        upsert_post(m.id.0 as i64, id as i64).await?;
+        info!("sending message");
+        match webhook_msg(None, "test".into()).await {
+            Ok(r) => upsert_post(m.id.0 as i64, r.id.0 as i64).await?,
+            Result::Err(e) => error!("{e}"),
+        }
       }
     }
   }
