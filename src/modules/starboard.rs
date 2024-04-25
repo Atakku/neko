@@ -34,7 +34,11 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
         if e.guild_id != Some(GuildId(1232659990993702943)) {
           return Ok(());
         }
-        starboard_update(c, e.message(c).await?).await?;
+
+        let Err(e) = starboard_update(c, e.message(c).await?).await else {
+          return Ok(());
+        };
+        error!("Error?: {e}");
       }
       ReactionRemove {
         removed_reaction: e,
@@ -42,7 +46,10 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
         if e.guild_id != Some(GuildId(1232659990993702943)) {
           return Ok(());
         }
-        starboard_update(c, e.message(c).await?).await?;
+        let Err(e) = starboard_update(c, e.message(c).await?).await else {
+          return Ok(());
+        };
+        error!("Error?: {e}");
       }
       _ => {}
     }
@@ -50,7 +57,6 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
   })
 }
 async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
-
   let ch = m.channel(c).await?;
   let spoiler = ch.category().map(|c| c.id) == Some(ChannelId(1232824647834140712));
 
@@ -69,15 +75,11 @@ async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
     }
     None => {
       //if count > 1 {
-        info!("sending message");
-        match webhook_msg(None, "test".into()).await {
-            Ok(r) => upsert_post(m.id.0 as i64, r.id.0 as i64).await?,
-            Result::Err(e) => error!("{e}"),
-        }
+        let id = webhook_msg(None, "test".into()).await?.id.0;
+        upsert_post(m.id.0 as i64, id as i64).await?;
       //}
     }
   }
-  info!("starboard_update2");
   Ok(())
 }
 
