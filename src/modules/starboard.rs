@@ -2,13 +2,12 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use super::reqwest::{req, Reqwest};
+use super::{reqwest::{req, Reqwest}, sqlx::Postgres};
 use crate::{core::*, modules::poise::Poise, query::starboard::*};
 use poise::{
-  serenity_prelude::{ChannelId, Context, EmojiId, GuildId, Message, MessageId, ReactionType},
+  serenity_prelude::{ChannelId, Context, GuildId, Message, MessageId, ReactionType},
   BoxFuture, Event,
 };
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -17,6 +16,7 @@ pub struct Starboard;
 
 impl Module for Starboard {
   fn init(&mut self, fw: &mut Framework) -> R {
+    fw.req_module::<Postgres>()?;
     fw.req_module::<Reqwest>()?;
     let poise = fw.req_module::<Poise>()?;
     poise.event_handlers.push(event_handler);
