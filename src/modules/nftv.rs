@@ -4,10 +4,7 @@
 
 use crate::{core::*, modules::poise::Poise};
 use poise::{
-  serenity_prelude::{
-    ButtonStyle, ChannelId, Colour, EmojiId, GuildId, InteractionResponseType, ReactionType,
-    RoleId, User,
-  },
+  serenity_prelude::{ChannelId, Colour, GuildId, User},
   BoxFuture, Event,
 };
 
