@@ -31,7 +31,6 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
     use Event::*;
     match event {
       ReactionAdd { add_reaction: e } => {
-        info!("ReactionAdd");
         if e.guild_id != Some(GuildId(1232659990993702943)) {
           return Ok(());
         }
@@ -40,7 +39,6 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
       ReactionRemove {
         removed_reaction: e,
       } => {
-        info!("ReactionRemove");
         if e.guild_id != Some(GuildId(1232659990993702943)) {
           return Ok(());
         }
@@ -65,6 +63,7 @@ async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
   else {
     return Ok(());
   };
+  info!("starboard_update1");
 
   match get_post_id(m.id.0 as i64).await? {
     Some((p,)) => {
@@ -77,6 +76,7 @@ async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
       }
     }
   }
+  info!("starboard_update2");
   Ok(())
 }
 
