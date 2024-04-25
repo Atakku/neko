@@ -5,7 +5,7 @@
 use super::{reqwest::{req, Reqwest}, sqlx::Postgres};
 use crate::{core::*, modules::poise::Poise, query::starboard::*};
 use poise::{
-  serenity_prelude::{ChannelId, Context, GuildId, Message, MessageId, ReactionType},
+  serenity_prelude::{ChannelId, Context, GatewayIntents, GuildId, Message, MessageId, ReactionType},
   BoxFuture, Event,
 };
 use serde::{Deserialize, Serialize};
@@ -19,6 +19,7 @@ impl Module for Starboard {
     fw.req_module::<Postgres>()?;
     fw.req_module::<Reqwest>()?;
     let poise = fw.req_module::<Poise>()?;
+    poise.intents.insert(GatewayIntents::GUILD_MESSAGE_REACTIONS);
     poise.event_handlers.push(event_handler);
     Ok(())
   }
@@ -48,7 +49,6 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
   })
 }
 async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
-  log::info!("Starboard update");
   let ch = m.channel(c).await?;
   let spoiler = ch.category().map(|c| c.id) == Some(ChannelId(1232824647834140712));
 
