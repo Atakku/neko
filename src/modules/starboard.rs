@@ -2,13 +2,20 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use super::{reqwest::{req, Reqwest}, sqlx::Postgres};
+use super::{
+  reqwest::{req, Reqwest},
+  sqlx::Postgres,
+};
 use crate::{core::*, modules::poise::Poise, query::starboard::*};
+use itertools::Itertools;
 use log::{debug, error, info};
 use poise::{
-  serenity_prelude::{ChannelId, Context, GatewayIntents, GuildId, Message, MessageId, ReactionType},
+  serenity_prelude::{
+    ChannelId, Context, GatewayIntents, GuildId, Message, MessageId, ReactionType, User,
+  },
   BoxFuture, Event,
 };
+use reqwest::{Client, RequestBuilder, Response};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -20,7 +27,9 @@ impl Module for Starboard {
     fw.req_module::<Postgres>()?;
     fw.req_module::<Reqwest>()?;
     let poise = fw.req_module::<Poise>()?;
-    poise.intents.insert(GatewayIntents::GUILD_MESSAGE_REACTIONS);
+    poise
+      .intents
+      .insert(GatewayIntents::GUILD_MESSAGE_REACTIONS);
     poise.event_handlers.push(event_handler);
     Ok(())
   }
@@ -34,11 +43,7 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
         if e.guild_id != Some(GuildId(1232659990993702943)) {
           return Ok(());
         }
-
-        let Err(e) = starboard_update(c, e.message(c).await?).await else {
-          return Ok(());
-        };
-        error!("Error?: {e}");
+        starboard_update(c, e.message(c).await?).await?;
       }
       ReactionRemove {
         removed_reaction: e,
@@ -46,19 +51,34 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
         if e.guild_id != Some(GuildId(1232659990993702943)) {
           return Ok(());
         }
-        let Err(e) = starboard_update(c, e.message(c).await?).await else {
-          return Ok(());
-        };
-        error!("Error?: {e}");
+        starboard_update(c, e.message(c).await?).await?;
       }
       _ => {}
     }
     Ok(())
   })
 }
+
+const CATEGORIES: &[(ChannelId, bool)] = &[
+  (ChannelId(1232822999732719826), false), // chat
+  (ChannelId(1232823234240577679), false), // gaming
+  (ChannelId(1232821654200123392), false), // vc
+  (ChannelId(1232824647834140712), true), // nsfw
+  (ChannelId(1232744932834410610), true), // media - forum
+  (ChannelId(1232744969996075079), true), // nsfw - forum
+];
+
 async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
-  let ch = m.channel(c).await?;
-  let spoiler = ch.category().map(|c| c.id) == Some(ChannelId(1232824647834140712));
+  let Some(ch) = m.channel(c).await?.guild() else {
+    return Ok(());
+  };
+  let Some(cat) = ch.parent_id else {
+    return Ok(());
+  };
+  let Some((_, spoiler)) = CATEGORIES.iter().find(|(id, _)| id == &cat) else {
+    error!("cat not listed");
+    return Ok(());
+  };
 
   let Some((react, count)) = m
     .reactions
@@ -69,15 +89,32 @@ async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
     return Ok(());
   };
 
+  let mut msg = format!("**{count}x** {react} in https://discord.com/channels/1232659990993702943/{}/{}\n", m.channel_id, m.id);
+  if *spoiler {
+    msg+="||"
+  }
+  msg += &{
+    let mut ctx = String::new();
+    if m.content != "" {
+      ctx+=&m.content;
+      ctx+="\n";
+    }
+    ctx+=&m.attachments.iter().take(5).map(|a| format!("[{}]({})", a.filename, a.url.clone())).join(" ");
+    ctx
+  }.replace("||", "");
+  if *spoiler {
+    msg+=" ||"
+  }
+
   match get_post_id(m.id.0 as i64).await? {
     Some((p,)) => {
-      webhook_msg(Some(p), format!("{react} x {count}")).await?.id.0;
+      edit_post(p, msg, m.author).await?;
     }
     None => {
-      //if count > 1 {
-        let id = webhook_msg(None, "test".into()).await?.id.0;
+      if count > 5 {
+        let id = new_post(msg, m.author).await?.0;
         upsert_post(m.id.0 as i64, id as i64).await?;
-      //}
+      }
     }
   }
   Ok(())
@@ -87,6 +124,28 @@ async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
 struct HookMsg {
   pub content: String,
   pub allowed_mentions: HashMap<String, Vec<String>>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub avatar_url: Option<String>,
+  pub username: String
+}
+
+async fn send(method: fn(&Client, String) -> RequestBuilder, suffix: String, text: String, u: User) -> Res<Response> {
+  let mut hm: HashMap<String, Vec<String>> = HashMap::new();
+  hm.insert("parse".into(), vec![]);
+
+  Ok((method)(req(), format!(
+    "{}{suffix}",
+    expect_env!("STARBOARD_HOOK"),
+  ))
+  .json(&HookMsg {
+    content: text,
+    allowed_mentions: hm,
+    avatar_url: u.avatar_url(),
+    username: u.name,
+    ..Default::default()
+  })
+  .send()
+  .await?)
 }
 
 #[derive(Deserialize)]
@@ -94,27 +153,11 @@ struct HookRes {
   pub id: MessageId,
 }
 
-async fn webhook_msg(srcid: Option<i64>, text: String) -> Res<HookRes> {
-  let mut hm: HashMap<String, Vec<String>> = HashMap::new();
-  hm.insert("parse".into(), vec![]);
+async fn new_post(text: String, u: User) -> Res<MessageId> {
+  Ok(send(Client::post, "?wait=true".into(), text, u).await?.json::<HookRes>().await?.id)
+}
 
-  Ok(
-    req()
-      .post(format!(
-        "{}{}?wait=true",
-        expect_env!("STARBOARD_HOOK"),
-        srcid
-          .map(|id| format!("/messages/{id}"))
-          .unwrap_or("".into())
-      ))
-      .json(&HookMsg {
-        content: text,
-        allowed_mentions: hm,
-        ..Default::default()
-      })
-      .send()
-      .await?
-      .json()
-      .await?,
-  )
+async fn edit_post(id: i64, text: String, u: User) -> Res<()> {
+  send(Client::patch, format!("/messages/{id}"), text, u).await?.text().await?;
+  Ok(())
 }

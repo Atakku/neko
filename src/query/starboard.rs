@@ -10,7 +10,7 @@ pub async fn get_post_id(source_id: i64) -> Res<Option<(i64,)>> {
   let mut qb = Query::select();
   qb.from(Table);
   qb.columns([PostId]);
-  qb.and_where(ex_col!(Posts, SouceId).eq(source_id));
+  qb.and_where(ex_col!(Posts, SourceId).eq(source_id));
   Ok(fetch_optional!(&qb, (i64,))?) 
 }
 
@@ -18,9 +18,9 @@ pub async fn upsert_post(source_id: i64, post_id: i64) -> Res<()> {
   use Posts::*;
   let mut qb = Query::insert();
   qb.into_table(Table);
-  qb.columns([SouceId, PostId]);
+  qb.columns([SourceId, PostId]);
   qb.on_conflict(
-    OnConflict::column(SouceId)
+    OnConflict::column(SourceId)
       .update_columns([PostId])
       .to_owned(),
   );

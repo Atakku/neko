@@ -8,7 +8,7 @@ use sea_query::Iden;
 #[iden(rename = "starboard_posts")]
 pub enum Posts {
   Table,
-  SouceId,
+  SourceId,
   PostId,
 }
 
