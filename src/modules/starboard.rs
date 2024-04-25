@@ -48,6 +48,7 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
   })
 }
 async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
+  log::info!("Starboard update");
   let ch = m.channel(c).await?;
   let spoiler = ch.category().map(|c| c.id) == Some(ChannelId(1232824647834140712));
 
