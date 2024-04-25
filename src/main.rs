@@ -24,6 +24,7 @@ async fn main() -> R {
     fw.init_module(radio::Radio {})?;
     fw.init_module(welcomer::Welcomer)?;
   }
+  fw.init_module(ftvroles::FTVRoles)?;
   fw.run().await?;
   Ok(())
 }
