@@ -8,13 +8,15 @@ use poise::{
   BoxFuture, Event,
 };
 
-pub const GUILD: GuildId = GuildId(1038789193113014333);
-const GENERAL: ChannelId = ChannelId(1178857392033759262);
+const GUILDS: &[(GuildId, ChannelId)] = &[
+  (GuildId(1038789193113014333), ChannelId(1178857392033759262)),
+  (GuildId(1232659990993702943), ChannelId(1232666862148653147))
+];
 
 /// Module with femboy.tv discord server functionality
-pub struct FemboyTV;
+pub struct Welcomer;
 
-impl Module for FemboyTV {
+impl Module for Welcomer {
   fn init(&mut self, fw: &mut Framework) -> R {
     let poise = fw.req_module::<Poise>()?;
     poise.event_handlers.push(welcomer);
@@ -27,31 +29,41 @@ fn welcomer<'a>(c: &'a poise::serenity_prelude::Context, event: &'a Event<'a>) -
     use Event::*;
     match event {
       GuildMemberAddition { new_member: m } => {
-        if !m.user.bot && m.guild_id == GUILD {
-          let u = &m.user;
-          GENERAL
-            .send_message(c, |m| {
-              m.embed(|e| {
-                e.author(|a| {
-                  a.icon_url(get_avatar(&u));
-                  a.name(get_name(&u));
-                  a.url(format!("https://discord.com/users/{}", u.id))
-                });
-                e.colour(Colour::from_rgb(139, 195, 74));
-                e.description(format!("Welcome <@{}> to the server!", u.id))
+        if m.user.bot {
+          return Ok(());
+        }
+
+        for guild in GUILDS {
+          if m.guild_id == guild.0 {
+            let u = &m.user;
+            guild.1
+              .send_message(c, |m| {
+                m.embed(|e| {
+                  e.author(|a| {
+                    a.icon_url(get_avatar(&u));
+                    a.name(get_name(&u));
+                    a.url(format!("https://discord.com/users/{}", u.id))
+                  });
+                  e.colour(Colour::from_rgb(139, 195, 74));
+                  e.description(format!("Welcome <@{}> to the server!", u.id))
+                })
               })
-            })
-            .await?;
+              .await?;
+          }
         }
       }
-
       GuildMemberRemoval {
         guild_id: g,
         user: u,
         member_data_if_available: _,
       } => {
-        if !u.bot && *g == GUILD {
-          GENERAL
+        if u.bot {
+          return Ok(());
+        }
+
+        for guild in GUILDS {
+          if *g == guild.0 {
+            guild.1
             .send_message(c, |m| {
               m.embed(|e| {
                 e.author(|a| {
@@ -64,6 +76,7 @@ fn welcomer<'a>(c: &'a poise::serenity_prelude::Context, event: &'a Event<'a>) -
               })
             })
             .await?;
+          }
         }
       }
       _ => {}

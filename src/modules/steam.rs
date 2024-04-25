@@ -173,7 +173,7 @@ mod guild {
       steam::{At, By, Of},
     },
   };
-  use poise::ChoiceParameter;
+  use poise::{serenity_prelude::GuildId, ChoiceParameter};
 
   #[derive(ChoiceParameter)]
   enum GuildTop {
@@ -201,7 +201,7 @@ mod guild {
     let guild = guild.unwrap_or(
       ctx
         .guild_id()
-        .unwrap_or(crate::modules::ftv::GUILD)
+        .unwrap_or(GuildId(1232659990993702943))
         .0
         .to_string(),
     );
