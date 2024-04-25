@@ -63,9 +63,9 @@ const CATEGORIES: &[(ChannelId, bool)] = &[
   (ChannelId(1232822999732719826), false), // chat
   (ChannelId(1232823234240577679), false), // gaming
   (ChannelId(1232821654200123392), false), // vc
-  (ChannelId(1232824647834140712), true), // nsfw
-  (ChannelId(1232744932834410610), true), // media - forum
-  (ChannelId(1232744969996075079), true), // nsfw - forum
+  (ChannelId(1232824647834140712), true),  // nsfw
+  (ChannelId(1232744932834410610), true),  // media - forum
+  (ChannelId(1232744969996075079), true),  // nsfw - forum
 ];
 
 async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
@@ -89,21 +89,37 @@ async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
     return Ok(());
   };
 
-  let mut msg = format!("**{count}x** {react} in https://discord.com/channels/1232659990993702943/{}/{}\n", m.channel_id, m.id);
+  let mut msg = format!(
+    "**{count}x** {react} in https://discord.com/channels/1232659990993702943/{}/{}\n",
+    m.channel_id, m.id
+  );
   if *spoiler {
-    msg+="||"
+    msg += "||"
   }
-  msg += &{
-    let mut ctx = String::new();
-    if m.content != "" {
-      ctx+=&m.content;
-      ctx+="\n";
-    }
-    ctx+=&m.attachments.iter().take(5).map(|a| format!("[{}]({})", a.filename, a.url.clone())).join(" ");
-    ctx
-  }.replace("||", "");
+  if m.content != "" {
+    msg += &m.content.replace("||", "");
+    msg += "\n";
+  }
+  msg += &m
+      .attachments
+      .iter()
+      .take(5)
+      .map(|a| {
+        let mut att = String::new();
+        if a.filename.contains("SPOILER") && !*spoiler {
+          att += "||"
+        }
+        att += &format!("[{}]({})", a.filename, a.url.clone()).replace("||", "");
+
+        if a.filename.contains("SPOILER") && !*spoiler {
+          att += "||"
+        }
+        att
+      })
+      .join(" ");
+
   if *spoiler {
-    msg+=" ||"
+    msg += " ||"
   }
 
   match get_post_id(m.id.0 as i64).await? {
@@ -126,26 +142,30 @@ struct HookMsg {
   pub allowed_mentions: HashMap<String, Vec<String>>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub avatar_url: Option<String>,
-  pub username: String
+  pub username: String,
 }
 
-async fn send(method: fn(&Client, String) -> RequestBuilder, suffix: String, text: String, u: User) -> Res<Response> {
+async fn send(
+  method: fn(&Client, String) -> RequestBuilder,
+  suffix: String,
+  text: String,
+  u: User,
+) -> Res<Response> {
   let mut hm: HashMap<String, Vec<String>> = HashMap::new();
   hm.insert("parse".into(), vec![]);
 
-  Ok((method)(req(), format!(
-    "{}{suffix}",
-    expect_env!("STARBOARD_HOOK"),
-  ))
-  .json(&HookMsg {
-    content: text,
-    allowed_mentions: hm,
-    avatar_url: u.avatar_url(),
-    username: u.name,
-    ..Default::default()
-  })
-  .send()
-  .await?)
+  Ok(
+    (method)(req(), format!("{}{suffix}", expect_env!("STARBOARD_HOOK"),))
+      .json(&HookMsg {
+        content: text,
+        allowed_mentions: hm,
+        avatar_url: u.avatar_url(),
+        username: u.name,
+        ..Default::default()
+      })
+      .send()
+      .await?,
+  )
 }
 
 #[derive(Deserialize)]
@@ -154,10 +174,19 @@ struct HookRes {
 }
 
 async fn new_post(text: String, u: User) -> Res<MessageId> {
-  Ok(send(Client::post, "?wait=true".into(), text, u).await?.json::<HookRes>().await?.id)
+  Ok(
+    send(Client::post, "?wait=true".into(), text, u)
+      .await?
+      .json::<HookRes>()
+      .await?
+      .id,
+  )
 }
 
 async fn edit_post(id: i64, text: String, u: User) -> Res<()> {
-  send(Client::patch, format!("/messages/{id}"), text, u).await?.text().await?;
+  send(Client::patch, format!("/messages/{id}"), text, u)
+    .await?
+    .text()
+    .await?;
   Ok(())
 }
