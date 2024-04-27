@@ -98,7 +98,9 @@ async fn starboard_update<'a>(c: &'a Context, m: Message) -> Res<()> {
   }
   if m.content != "" {
     msg += &m.content.replace("||", "");
-    msg += "\n";
+    if m.attachments.len() > 0 {
+      msg += "\n";
+    }
   }
   msg += &m
       .attachments
