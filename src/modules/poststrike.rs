@@ -3,12 +3,12 @@
 // This project is dual licensed under MIT and Apache.
 
 use super::sqlx::Postgres;
+use crate::query::poststrike::*;
 use crate::{core::*, modules::poise::Poise};
 use poise::{
   serenity_prelude::{ChannelId, Context, GatewayIntents},
   BoxFuture, Event,
 };
-use crate::query::poststrike::*;
 
 /// Module with femboy.tv discord server functionality
 pub struct PostStrike;
@@ -30,7 +30,7 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
   Box::pin(async move {
     use Event::*;
     match event {
-      Message { new_message:  m } => {
+      Message { new_message: m } => {
         if m.channel_id != ChannelId(1232829261279264829) || m.author.bot {
           return Ok(());
         }
@@ -41,17 +41,29 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
         if diff < MIN_TRESH {
           log::error!("too early, do nothing");
           // too early, do nothing
-          m.reply(&c, format!("🔥 **You posted again too early, strike is still at {strike}** 🔥")).await?;
-        } else if diff >= MIN_TRESH && diff < MAX_TRESH  {
+          m.reply(
+            &c,
+            format!("🔥 **You posted again too early, strike is still at {strike}** 🔥"),
+          )
+          .await?;
+        } else if diff >= MIN_TRESH && diff < MAX_TRESH {
           log::error!("add one");
           // add one
           update_timestamp(user, new_ts, strike + 1).await?;
-          m.reply(&c, format!("🔥 **Your strike is now at {}** 🔥", strike + 1)).await?;
+          m.reply(
+            &c,
+            format!("🔥 **Your strike is now at {}** 🔥", strike + 1),
+          )
+          .await?;
         } else {
           log::error!("reset");
           // reset
-          update_timestamp(user, new_ts, 1).await?;
-          m.reply(&c, format!("🔥 **Your strike has been reset to 1** 🔥")).await?;
+          match update_timestamp(user, new_ts, 1).await {
+            Ok(()) => log::error!("reset"),
+            Err(err) => log::error!("reset: {err}"),
+          }
+          m.reply(&c, format!("🔥 **Your strike has been reset to 1** 🔥"))
+            .await?;
         }
       }
       _ => {}
