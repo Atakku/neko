@@ -35,7 +35,6 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
           return Ok(());
         }
         if m.channel(c).await?.guild().unwrap().message(c, m).await?.attachments.len() == 0 {
-          log::error!("ignoring, no attach");
           return Ok(());
         }
         let user = m.author.id.0 as i64;
@@ -59,11 +58,7 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
           .await?;
         } else {
           // reset
-          match  update_timestamp(user, new_ts, 1).await {
-            Ok(()) => log::error!("we good"),
-            Err(err) => log::error!("we no good: {err}"),
-          }
-          //update_timestamp(user, new_ts, 1).await?;
+          update_timestamp(user, new_ts, 1).await?;
           m.reply(&c, format!("🔥 **Your streak has been reset to 1** 🔥"))
             .await?;
         }
