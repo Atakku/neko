@@ -35,6 +35,7 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
           return Ok(());
         }
         if m.attachments.len() == 0 {
+          log::error!("ignoring, no attach");
           return Ok(());
         }
         let user = m.author.id.0 as i64;
