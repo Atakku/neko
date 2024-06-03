@@ -38,6 +38,7 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
         let (prev_ts, strike) = get_strike(user).await?.unwrap_or((0, 0));
         let new_ts = m.timestamp.unix_timestamp();
         let diff = new_ts - prev_ts;
+        log::error!("diff {diff}");
         if diff < MIN_TRESH {
           log::error!("too early, do nothing");
           // too early, do nothing

@@ -1,5 +1,5 @@
 CREATE TABLE poststrike (
-  user_id BIGINT NOT NULL,
+  user_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   strike BIGINT NOT NULL,
   timestamp BIGINT NOT NULL
 );
