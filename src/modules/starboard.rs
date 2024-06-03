@@ -8,10 +8,10 @@ use super::{
 };
 use crate::{core::*, modules::poise::Poise, query::starboard::*};
 use itertools::Itertools;
-use log::{debug, error, info};
+use log::error;
 use poise::{
   serenity_prelude::{
-    ChannelId, Context, GatewayIntents, GuildId, Message, MessageId, ReactionType, User,
+    ChannelId, Context, GatewayIntents, GuildId, Message, MessageId, User,
   },
   BoxFuture, Event,
 };

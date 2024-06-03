@@ -5,11 +5,11 @@
 use sea_query::Iden;
 
 #[derive(Iden)]
-#[iden(rename = "poststrike")]
+#[iden(rename = "poststreak")]
 pub enum Posts {
   Table,
   UserId,
   Timestamp,
-  Strike
+  Streak
 }
 

@@ -26,7 +26,7 @@ async fn main() -> R {
     fw.init_module(ftvroles::FTVRoles)?;
     fw.init_module(starboard::Starboard)?;
   }
-  fw.init_module(poststrike::PostStrike)?;
+  fw.init_module(streak::PostStreak)?;
   fw.run().await?;
   Ok(())
 }
