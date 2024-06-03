@@ -36,6 +36,7 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
         let new_ts = m.timestamp.unix_timestamp();
         if new_ts < prev_ts + MIN_TRESH {
           // too early, do nothing
+          m.reply(&c, format!("🔥 **You posted again too early, strike is still at {}** 🔥", strike)).await?;
         } else if new_ts > prev_ts + MIN_TRESH && new_ts < prev_ts + MAX_TRESH  {
           // add one
           update_timestamp(user, new_ts, strike + 1).await?;
