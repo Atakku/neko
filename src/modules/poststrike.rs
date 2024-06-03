@@ -31,23 +31,24 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
     use Event::*;
     match event {
       Message { new_message:  m } => {
-        log::error!("Gwaa new message {:?}", m);
         if m.channel_id != ChannelId(1232829261279264829) || m.author.bot {
-          log::error!("nuh uh");
           return Ok(());
         }
         let user = m.author.id.0 as i64;
         let (prev_ts, strike) = get_strike(user).await?.unwrap_or((0, 0));
         let new_ts = m.timestamp.unix_timestamp();
-        log::error!("gwak {new_ts}");
-        if new_ts < prev_ts + MIN_TRESH {
+        let diff = new_ts - prev_ts;
+        if diff < MIN_TRESH {
+          log::error!("too early, do nothing");
           // too early, do nothing
           m.reply(&c, format!("🔥 **You posted again too early, strike is still at {strike}** 🔥")).await?;
-        } else if new_ts > prev_ts + MIN_TRESH && new_ts < prev_ts + MAX_TRESH  {
+        } else if diff >= MIN_TRESH && diff < MAX_TRESH  {
+          log::error!("add one");
           // add one
           update_timestamp(user, new_ts, strike + 1).await?;
           m.reply(&c, format!("🔥 **Your strike is now at {}** 🔥", strike + 1)).await?;
         } else {
+          log::error!("reset");
           // reset
           update_timestamp(user, new_ts, 1).await?;
           m.reply(&c, format!("🔥 **Your strike has been reset to 1** 🔥")).await?;
