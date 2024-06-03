@@ -5,7 +5,7 @@
 use super::sqlx::Postgres;
 use crate::{core::*, modules::poise::Poise};
 use poise::{
-  serenity_prelude::{Context, GatewayIntents},
+  serenity_prelude::{ChannelId, Context, GatewayIntents},
   BoxFuture, Event,
 };
 use crate::query::poststrike::*;
@@ -31,6 +31,9 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
     use Event::*;
     match event {
       Message { new_message:  m } => {
+        if m.channel_id != ChannelId(1232829261279264829) || m.author.bot {
+          return Ok(());
+        }
         let user = m.author.id.0 as i64;
         let (prev_ts, strike) = get_strike(user).await?.unwrap_or((0, 0));
         let new_ts = m.timestamp.unix_timestamp();
