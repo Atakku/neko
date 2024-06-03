@@ -38,9 +38,7 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
         let (prev_ts, strike) = get_strike(user).await?.unwrap_or((0, 0));
         let new_ts = m.timestamp.unix_timestamp();
         let diff = new_ts - prev_ts;
-        log::error!("diff {diff}");
         if diff < MIN_TRESH {
-          log::error!("too early, do nothing");
           // too early, do nothing
           m.reply(
             &c,
@@ -48,7 +46,6 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
           )
           .await?;
         } else if diff >= MIN_TRESH && diff < MAX_TRESH {
-          log::error!("add one");
           // add one
           update_timestamp(user, new_ts, strike + 1).await?;
           m.reply(
@@ -57,12 +54,8 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
           )
           .await?;
         } else {
-          log::error!("reset");
           // reset
-          match update_timestamp(user, new_ts, 1).await {
-            Ok(()) => log::error!("reset"),
-            Err(err) => log::error!("reset: {err}"),
-          }
+          update_timestamp(user, new_ts, 1).await?;
           m.reply(&c, format!("🔥 **Your strike has been reset to 1** 🔥"))
             .await?;
         }
