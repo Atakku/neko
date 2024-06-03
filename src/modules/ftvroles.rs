@@ -4,10 +4,7 @@
 
 use crate::{core::*, modules::poise::Poise};
 use poise::{
-  serenity_prelude::{
-    ButtonStyle, EmojiId,
-    Interaction::MessageComponent, ReactionType, RoleId,
-  },
+  serenity_prelude::{ButtonStyle, EmojiId, Interaction::MessageComponent, ReactionType, RoleId},
   BoxFuture, Event,
 };
 
@@ -72,6 +69,13 @@ async fn spawn_roles(ctx: crate::modules::poise::Ctx<'_>) -> R {
   for group in ROLES {
     let rows: Vec<_> = group.1.chunks(5).map(|row| row.to_vec()).collect();
 
+    if rows.len() == 0 {
+      ctx
+        .send(|b| b.content(group.0))
+        .await?
+        .into_message()
+        .await?;
+    }
     for (i, msg) in rows.chunks(5).enumerate() {
       ctx
         .send(|b| {
@@ -245,6 +249,14 @@ const ROLES: &[(&str, &[(u64, &str, bool, &str)])] = &[
       (1232858754932932648, "🇨🇭", false, ""),
     ],
   ),
+  ("### Central Asia:", &[
+    // Canada
+    // Greenland
+    // United states
+  ]),
+  ("### Central America:", &[
+
+  ]),
   (
     "### wip:",
     &[
