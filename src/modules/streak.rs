@@ -34,7 +34,7 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
         if m.channel_id != ChannelId(1232829261279264829) || m.author.bot {
           return Ok(());
         }
-        if m.attachments.len() == 0 {
+        if m.channel(c).await?.guild().unwrap().message(c, m).await?.attachments.len() == 0 {
           log::error!("ignoring, no attach");
           return Ok(());
         }
