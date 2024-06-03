@@ -58,7 +58,11 @@ fn event_handler<'a>(c: &'a Context, event: &'a Event<'a>) -> BoxFuture<'a, R> {
           .await?;
         } else {
           // reset
-          update_timestamp(user, new_ts, 1).await?;
+          match  update_timestamp(user, new_ts, 1).await {
+            Ok(()) => log::error!("we good"),
+            Err(err) => log::error!("we no good: {err}"),
+          }
+          //update_timestamp(user, new_ts, 1).await?;
           m.reply(&c, format!("🔥 **Your streak has been reset to 1** 🔥"))
             .await?;
         }
