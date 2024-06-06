@@ -16,11 +16,11 @@ use tokio_cron_scheduler::Job;
 pub struct BeatLeader;
 
 impl Module for BeatLeader {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    fw.req_module::<Postgres>()?;
-    let poise = fw.req_module::<Poise>()?;
+  async fn init(&mut self, fw: &mut Framework) -> R {
+    fw.req_module::<Postgres>().await?;
+    let poise = fw.req_module::<Poise>().await?;
     poise.commands.push(beetleader());
-    let cron = fw.req_module::<Cron>()?;
+    let cron = fw.req_module::<Cron>().await?;
     cron.jobs.push(Job::new_async("0 0 */1 * * *", |_id, _jsl| {
       Box::pin(async move {
         update_scores().await.unwrap();

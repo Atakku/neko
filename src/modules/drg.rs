@@ -15,9 +15,9 @@ use std::fmt;
 pub struct DeepRockGalactic;
 
 impl Module for DeepRockGalactic {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    fw.req_module::<Reqwest>()?;
-    let poise = fw.req_module::<Poise>()?;
+  async fn init(&mut self, fw: &mut Framework) -> R {
+    fw.req_module::<Reqwest>().await?;
+    let poise = fw.req_module::<Poise>().await?;
     poise.commands.push(drg());
     Ok(())
   }

@@ -9,9 +9,9 @@ use crate::{
 pub struct Radio;
 
 impl Module for Radio {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    fw.req_module::<Reqwest>()?;
-    let poise = fw.req_module::<Poise>()?;
+  async fn init(&mut self, fw: &mut Framework) -> R {
+    fw.req_module::<Reqwest>().await?;
+    let poise = fw.req_module::<Poise>().await?;
     poise.commands.push(radio());
     Ok(())
   }

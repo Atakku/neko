@@ -2,11 +2,16 @@
 //
 // This project is dual licensed under MIT and Apache.
 
+use tokio::task::JoinHandle;
+
 use crate::core::{Framework, Res, R};
 use std::any::Any;
+use std::future::Future;
+
+use super::ModuleState;
 
 pub trait Module: Any {
-  fn init(&mut self, fw: &mut Framework) -> R;
+  fn init(&mut self, fw: &mut Framework) -> impl Future<Output = R>;
 }
 
 impl Framework {
@@ -15,17 +20,17 @@ impl Framework {
   }
 
   /// Load a supplied module
-  pub fn init_module<T: Module>(&mut self, mut module: T) -> Res<&mut Self> {
+  pub async fn init_module<T: Module>(&mut self, mut module: T) -> Res<&mut Self> {
     log::info!("Initializing {}", std::any::type_name::<T>());
-    module.init(self)?;
+    module.init(self).await?;
     self.modules.put(module);
     Ok(self)
   }
 
   /// Check if module is already loaded, and if not, load a default impl
-  pub fn req_module<T: Module + Default>(&mut self) -> Res<&mut T> {
+  pub async fn req_module<T: Module + Default>(&mut self) -> Res<&mut T> {
     if !self.has_module::<T>() {
-      self.init_module(T::default())?;
+      self.init_module(T::default()).await?;
     }
     self.modules.borrow_mut::<T>()
   }

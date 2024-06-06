@@ -23,10 +23,10 @@ use std::collections::HashMap;
 pub struct Starboard;
 
 impl Module for Starboard {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    fw.req_module::<Postgres>()?;
-    fw.req_module::<Reqwest>()?;
-    let poise = fw.req_module::<Poise>()?;
+  async fn init(&mut self, fw: &mut Framework) -> R {
+    fw.req_module::<Postgres>().await?;
+    fw.req_module::<Reqwest>().await?;
+    let poise = fw.req_module::<Poise>().await?;
     poise
       .intents
       .insert(GatewayIntents::GUILD_MESSAGE_REACTIONS);

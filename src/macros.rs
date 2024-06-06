@@ -83,16 +83,18 @@ macro_rules! api {
     )*
   }) => {
     pub trait $name {
-      $(async fn $fun(&self, $($($pn: $pt),*)?) -> crate::core::Res<$ty>;)*
+      $(fn $fun(&self, $($($pn: $pt),*)?) -> impl std::future::Future<Output = crate::core::Res<$ty>>;)*
     }
 
     impl $name for reqwest::Client {
-      $(async fn $fun(&self, $($($pn: $pt),*)?) -> crate::core::Res<$ty> {
-        let req = format!(concat!($base, $endpoint, $("?",$(stringify!($pn), "={", stringify!($pn), "}&"),*)?), $($($pn=$pn),*)?);
-        log::trace!("Sending req to {req}");
-        let res = self.get(req).send().await?;
-        log::trace!("Received status: {}", res.status());
-        Ok(res.json::<$ty>().await?)
+      $(fn $fun(&self, $($($pn: $pt),*)?) -> impl std::future::Future<Output = crate::core::Res<$ty>> {
+        async move {
+          let req = format!(concat!($base, $endpoint, $("?",$(stringify!($pn), "={", stringify!($pn), "}&"),*)?), $($($pn=$pn),*)?);
+          log::trace!("Sending req to {req}");
+          let res = self.get(req).send().await?;
+          log::trace!("Received status: {}", res.status()); 
+          Ok(res.json::<$ty>().await?)
+        }
       })*
     }
   };
@@ -138,7 +140,7 @@ macro_rules! module {
     }
 
     impl crate::core::Module for $name {
-      fn init(&mut self, $fw: &mut crate::core::Framework) -> crate::core::R {
+      async fn init(&mut self, $fw: &mut crate::core::Framework) -> crate::core::R {
         $block
         Ok(())
       }

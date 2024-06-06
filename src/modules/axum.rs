@@ -22,7 +22,7 @@ impl Default for Axum {
 }
 
 impl Module for Axum {
-  fn init(&mut self, fw: &mut Framework) -> R {
+  async fn init(&mut self, fw: &mut Framework) -> R {
     fw.runtime.push(|m| {
       let axum = m.take::<Self>()?;
       Ok(Box::pin(async move {

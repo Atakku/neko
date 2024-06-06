@@ -7,8 +7,8 @@ use crate::{core::*, modules::poise::Poise};
 pub struct AniList;
 
 impl Module for AniList {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    let poise = fw.req_module::<Poise>()?;
+  async fn init(&mut self, fw: &mut Framework) -> R {
+    let poise = fw.req_module::<Poise>().await?;
     
     Ok(())
   }

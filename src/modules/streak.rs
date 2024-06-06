@@ -14,9 +14,9 @@ use poise::{
 pub struct PostStreak;
 
 impl Module for PostStreak {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    fw.req_module::<Postgres>()?;
-    let poise = fw.req_module::<Poise>()?;
+  async fn init(&mut self, fw: &mut Framework) -> R {
+    fw.req_module::<Postgres>().await?;
+    let poise = fw.req_module::<Poise>().await?;
     poise.intents.insert(GatewayIntents::GUILD_MESSAGES);
     poise.event_handlers.push(event_handler);
     Ok(())

@@ -21,9 +21,9 @@ use sea_query::{Expr, OnConflict, Query};
 pub struct Discord;
 
 impl Module for Discord {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    fw.req_module::<Postgres>()?;
-    let poise = fw.req_module::<Poise>()?;
+  async fn init(&mut self, fw: &mut Framework) -> R {
+    fw.req_module::<Postgres>().await?;
+    let poise = fw.req_module::<Poise>().await?;
     poise.event_handlers.push(event_handler());
     poise.intents.insert(GatewayIntents::GUILDS);
     poise.intents.insert(GatewayIntents::GUILD_MEMBERS);

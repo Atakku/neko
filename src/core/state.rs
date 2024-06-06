@@ -111,9 +111,13 @@ macro_rules! impl_state {
           type_name::<T>()
         ))?)
       }
+
+      pub fn inner(&mut self) -> &HashMap<TypeId, Box<(dyn std::any::Any + 'static)>, BuildHasherDefault<IdHasher>> {
+        &self.data
+      }
     }
   };
 }
 
 impl_state!(AnyData);
-impl_state!(SyncData);
+//impl_state!(SyncData);

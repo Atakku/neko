@@ -16,8 +16,8 @@ const ROLE: RoleId = RoleId(1040686138878341231);
 pub struct WarnSystem;
 
 impl Module for WarnSystem {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    let poise = fw.req_module::<Poise>()?;
+  async fn init(&mut self, fw: &mut Framework) -> R {
+    let poise = fw.req_module::<Poise>().await?;
     poise.commands.push(warn());
     poise.commands.push(rm_warn());
     poise.commands.push(warns());

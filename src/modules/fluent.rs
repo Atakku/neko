@@ -46,7 +46,7 @@ impl Default for Fluent {
 once_cell!(loc, LOCALE: crate::modules::fluent::FluentBundles);
 
 impl Module for Fluent {
-  fn init(&mut self, fw: &mut Framework) -> R {
+  async fn init(&mut self, fw: &mut Framework) -> R {
     load_resources(&mut self.resources)?;
     fw.runtime.push(|m| {
       let this = m.take::<Self>()?;

@@ -84,12 +84,12 @@ module!(
   Gwaaa {}
 
   fn init(fw) {
-    fw.req_module::<crate::modules::reqwest::Reqwest>()?;
-    fw.req_module::<crate::modules::sqlx::Postgres>()?;
+    fw.req_module::<crate::modules::reqwest::Reqwest>().await?;
+    fw.req_module::<crate::modules::sqlx::Postgres>().await?;
     REGEX.set(Regex::new("^https://steamcommunity.com/openid/id/([0-9]{17})$")?)?;
 
 
-    let axum = fw.req_module::<Axum>()?;
+    let axum = fw.req_module::<Axum>().await?;
 
     axum.routes.push(|r| {
       Box::pin(async move {

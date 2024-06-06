@@ -31,7 +31,7 @@ module!(
   }
 
   fn init(fw) {
-    fw.req_module::<Fluent>()?;
+    fw.req_module::<Fluent>().await?;
     runtime!(fw, |m| {
       Ok(Some(tokio::spawn(async move {
         Fw::builder()

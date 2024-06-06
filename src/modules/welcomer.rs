@@ -17,8 +17,8 @@ const GUILDS: &[(GuildId, ChannelId)] = &[
 pub struct Welcomer;
 
 impl Module for Welcomer {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    let poise = fw.req_module::<Poise>()?;
+  async fn init(&mut self, fw: &mut Framework) -> R {
+    let poise = fw.req_module::<Poise>().await?;
     poise.event_handlers.push(welcomer);
     Ok(())
   }

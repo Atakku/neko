@@ -14,8 +14,8 @@ use crate::{
 pub struct Atakku;
 
 impl Module for Atakku {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    let poise = fw.req_module::<Poise>()?;
+  async fn init(&mut self, fw: &mut Framework) -> R {
+    let poise = fw.req_module::<Poise>().await?;
     poise.commands.push(register_commands());
     poise.commands.push(update_steam());
     poise.commands.push(update_roles());

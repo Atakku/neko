@@ -12,8 +12,8 @@ use poise::{
 pub struct FTVRoles;
 
 impl Module for FTVRoles {
-  fn init(&mut self, fw: &mut Framework) -> R {
-    let poise = fw.req_module::<Poise>()?;
+  async fn init(&mut self, fw: &mut Framework) -> R {
+    let poise = fw.req_module::<Poise>().await?;
     poise.event_handlers.push(event_handler);
     poise.commands.push(spawn_roles());
     Ok(())
