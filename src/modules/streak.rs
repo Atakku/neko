@@ -61,7 +61,7 @@ fn nicefmt(raw_secs: i64) -> String {
   if hours > 0 || mins > 0 {
     out += &format!("{mins}m ");
   }
-  out += &format!("{secs}s ");
+  out += &format!("{secs}s");
   return out;
 }
 
