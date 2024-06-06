@@ -189,6 +189,7 @@ const ROLES: &[(&str, &[(u64, &str, bool, &str)])] = &[
     ],
   ),
   ("# Country roles:", &[]),
+  ("## Europe:", &[]),
   (
     "### Eastern Europe:",
     &[
