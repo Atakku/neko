@@ -49,9 +49,8 @@ pub async fn streak(ctx: Ctx<'_>) -> R {
   Ok(())
 }
 
-fn nicefmt(num: i64) -> String {
+fn nicefmt(raw_secs: i64) -> String {
   let mut out = String::new();
-  let raw_secs = num / 1000;
   let secs = raw_secs % 60;
   let raw_mins = raw_secs / 60;
   let mins = raw_mins % 60;
