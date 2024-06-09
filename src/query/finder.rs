@@ -4,7 +4,7 @@
 
 use sea_query::{OnConflict, Query};
 
-use crate::{core::Res, schema::finder::Users};
+use crate::{core::Res, schema::finder::*};
 
 pub async fn update_city(user_id: i64, city_id: i64) -> Res<()> {
   use Users::*;
@@ -15,4 +15,14 @@ pub async fn update_city(user_id: i64, city_id: i64) -> Res<()> {
   qb.values([user_id.into(), city_id.into()])?;
   execute!(&qb)?;
   Ok(())
+}
+
+pub async fn get_all()  -> Res<Vec<(i64, f64, f64, String)>> {
+  let mut qb = Query::select();
+  qb.from(Users::Table);
+  qb.from(Cities::Table);
+  qb.column(Users::UserId);
+  qb.columns([Cities::Lat, Cities::Lng, Cities::Name]);
+  qb.and_where(ex_col!(Users, CityId).equals(col!(Cities, Id)));
+  Ok(fetch_all!(&qb, (i64, f64, f64, String))?)
 }
