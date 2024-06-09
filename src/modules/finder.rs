@@ -41,7 +41,7 @@ pub async fn find(ctx: Ctx<'_>) -> R {
   let Some((pos, (_, lat, lng, _name))) = data
     .clone()
     .into_iter()
-    .find_position(|(name, _lat, _lng, _name)| *name == ctx.author().name)
+    .find_position(|(id, _lat, _lng, _name)| *id == ctx.author().id.0 as i64)
   else {
     ctx
       .send(|m| {
@@ -68,7 +68,7 @@ pub async fn find(ctx: Ctx<'_>) -> R {
 
   let mut output = String::new();
   for (id, dist, name) in data.iter().take(25) {
-    output += &format!("{dist}km | {id} | {name}\n");
+    output += &format!("{dist}km | <@{id}> | {name}\n");
   }
 
   ctx
