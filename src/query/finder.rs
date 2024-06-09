@@ -22,8 +22,8 @@ pub async fn get_all()  -> Res<Vec<(String, f64, f64, String)>> {
   qb.from(Users::Table);
   qb.from(Cities::Table);
   qb.from(discord::Users::Table);
-  qb.column(discord::Users::Name);
-  qb.columns([Cities::Lat, Cities::Lng, Cities::Name]);
+  qb.column(col!(discord::Users, Name));
+  qb.columns([col!(Cities, Lat), col!(Cities, Lng), col!(Cities, Name)]);
   qb.and_where(ex_col!(Users, UserId).equals(col!(discord::Users, Id)));
   qb.and_where(ex_col!(Users, CityId).equals(col!(Cities, Id)));
   Ok(fetch_all!(&qb, (String, f64, f64, String))?)
