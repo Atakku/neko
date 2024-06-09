@@ -42,3 +42,4 @@ macro_rules! autocomplete {
 
 autocomplete!(discord_guilds, discord::Guilds);
 autocomplete!(steam_apps, steam::Apps);
+autocomplete!(finder_cities, finder::Cities);
