@@ -11,7 +11,9 @@ pub enum Cities {
   Id,
   Lat,
   Lng,
-  Name
+  City,
+  Region,
+  Country
 }
 
 #[derive(Iden)]

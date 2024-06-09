@@ -63,9 +63,6 @@ pub async fn find(ctx: Ctx<'_>) -> R {
         .and_then(|dist| Ok((id, (dist.meters() / 1000.0) as i64, name)))
     })
     .filter_map(Result::ok)
-    .filter_map(|(id, dist, name)| {
-      name.split(" - ").last().and_then(|name| Some((id, dist, name.to_owned())))
-    })
     .sorted_by_key(|(_, dist, _)| *dist)
     .collect::<Vec<_>>();
 

@@ -22,7 +22,7 @@ pub async fn get_all()  -> Res<Vec<(i64, f64, f64, String)>> {
   qb.from(Users::Table);
   qb.from(Cities::Table);
   qb.column(Users::UserId);
-  qb.columns([Cities::Lat, Cities::Lng, Cities::Name]);
+  qb.columns([Cities::Lat, Cities::Lng, Cities::Country]);
   qb.and_where(ex_col!(Users, CityId).equals(col!(Cities, Id)));
   Ok(fetch_all!(&qb, (i64, f64, f64, String))?)
 }
