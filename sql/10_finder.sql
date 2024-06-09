@@ -2,7 +2,7 @@ CREATE TABLE finder_cities (
   id BIGINT PRIMARY KEY,
   lat FLOAT NOT NULL,
   lng FLOAT NOT NULL,
-  city TEXT NOT NULL
+  name TEXT NOT NULL
 );
 
 CREATE TABLE finder_users (
