@@ -4,7 +4,7 @@
 
 use sea_query::{OnConflict, Query};
 
-use crate::{core::Res, schema::finder::*};
+use crate::{core::Res, schema::findr::*};
 
 pub async fn update_city(user_id: i64, city_id: i64) -> Res<()> {
   use Users::*;

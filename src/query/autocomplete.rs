@@ -44,8 +44,8 @@ autocomplete!(discord_guilds, discord::Guilds);
 autocomplete!(steam_apps, steam::Apps);
 
 
-pub async fn finder_cities<'a>(_: Ctx<'_>, search: &'a str) -> Vec<AutocompleteChoice<String>> {
-  use finder::Cities::*;
+pub async fn findr_cities<'a>(_: Ctx<'_>, search: &'a str) -> Vec<AutocompleteChoice<String>> {
+  use findr::Cities::*;
   let mut qb = SelectStatement::new();
   qb.from(Table);
   qb.columns([Id, City, Region, Country]);
