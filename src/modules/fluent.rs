@@ -3,6 +3,7 @@
 // This project is dual licensed under MIT and Apache.
 
 use crate::core::*;
+use derivative::Derivative;
 use fluent::{bundle::FluentBundle as GenericFluentBundle, FluentArgs, FluentResource};
 use intl_memoizer::concurrent::IntlLangMemoizer;
 use rust_embed::RustEmbed;
@@ -29,18 +30,12 @@ impl Debug for FluentBundles {
 #[folder = "locale/"]
 struct Locale;
 
+#[derive(Derivative)]
+#[derivative(Default)]
 pub struct Fluent {
   resources: FluentResources,
+  #[derivative(Default(value = "\"en-US\".to_string()"))]
   default: String,
-}
-
-impl Default for Fluent {
-  fn default() -> Self {
-    Self {
-      resources: FluentResources::new(),
-      default: "en-US".into(),
-    }
-  }
 }
 
 once_cell!(loc, LOCALE: crate::modules::fluent::FluentBundles);

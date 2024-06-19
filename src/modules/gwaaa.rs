@@ -80,44 +80,49 @@ async fn login_now(session: SessionPgSession) -> Response {
 
 once_cell!(sid_regex, REGEX: Regex);
 
-module!(
-  Gwaaa {}
+#[derive(Default)]
+pub struct Gwaaa;
 
-  fn init(fw) {
-    fw.req_module::<crate::modules::reqwest::Reqwest>().await?;
-    fw.req_module::<crate::modules::sqlx::Postgres>().await?;
-    REGEX.set(Regex::new("^https://steamcommunity.com/openid/id/([0-9]{17})$")?)?;
+impl crate::core::Module for Gwaaa {
+  async fn init(&mut self, fw: &mut crate::core::Framework) -> crate::core::R {
+    {
+      fw.req_module::<crate::modules::reqwest::Reqwest>().await?;
+      fw.req_module::<crate::modules::sqlx::Postgres>().await?;
+      REGEX.set(Regex::new(
+        "^https://steamcommunity.com/openid/id/([0-9]{17})$",
+      )?)?;
 
+      let axum = fw.req_module::<Axum>().await?;
 
-    let axum = fw.req_module::<Axum>().await?;
-
-    axum.routes.push(|r| {
-      Box::pin(async move {
-        let session_config = SessionConfig::default().with_table_name("neko_users_sessions");
-        let session_store = SessionPgSessionStore::new(Some(db().clone().into()), session_config)
+      axum.routes.push(|r| {
+        Box::pin(async move {
+          let session_config = SessionConfig::default().with_table_name("neko_users_sessions");
+          let session_store = SessionPgSessionStore::new(Some(db().clone().into()), session_config)
             .await
             .unwrap();
 
-          Ok(r.route("/", get(root)).route("/login", get(login_now))
-          .route("/logout", get(logout))
-          .route("/settings", get(settings))
-          .route("/callback/anilist", get(callback_anilist))
-          .route("/callback/github", get(callback_github))
-          .route("/callback/steam", get(callback_steam))
-          .route("/callback/discord", get(callback_discord))
-          .route("/link/anilist", get(link_anilist))
-          .route("/link/github", get(link_github))
-          .route("/link/steam", get(link_steam))
-          .route("/link/discord", get(link_discord))
-        .layer(SessionLayer::new(session_store))
-
-        .route("/metrics", get(metrics))
-
-      )
-      })
-    });
+          Ok(
+            r.route("/", get(root))
+              .route("/login", get(login_now))
+              .route("/logout", get(logout))
+              .route("/settings", get(settings))
+              .route("/callback/anilist", get(callback_anilist))
+              .route("/callback/github", get(callback_github))
+              .route("/callback/steam", get(callback_steam))
+              .route("/callback/discord", get(callback_discord))
+              .route("/link/anilist", get(link_anilist))
+              .route("/link/github", get(link_github))
+              .route("/link/steam", get(link_steam))
+              .route("/link/discord", get(link_discord))
+              .layer(SessionLayer::new(session_store))
+              .route("/metrics", get(metrics)),
+          )
+        })
+      });
+    }
+    Ok(())
   }
-);
+}
 
 async fn metrics() -> String {
   let mut output = String::new();

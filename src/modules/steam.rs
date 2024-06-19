@@ -35,17 +35,8 @@ impl Module for Steam {
     let poise = fw.req_module::<Poise>().await?;
     poise.commands.push(steam());
     poise.event_handlers.push(roles());
-    let cron = fw.req_module::<Cron>().await?;
-    cron.jobs.push(Job::new_async("0 0 */1 * * *", |_id, _jsl| {
-      Box::pin(async move {
-        minor_update().await.unwrap();
-      })
-    })?);
-    cron.jobs.push(Job::new_async("0 0 0 */7 * *", |_id, _jsl| {
-      Box::pin(async move {
-        //update_apps().await.unwrap()
-      })
-    })?);
+    cron!(fw, "0 0 */1 * * *", || { minor_update().await.unwrap() });
+    //cron!(fw, "0 0 0 */7 * *", || { update_apps().await.unwrap() });
     Ok(())
   }
 }

@@ -2,16 +2,15 @@
 //
 // This project is dual licensed under MIT and Apache.
 
-use tokio::task::JoinHandle;
-
 use crate::core::{Framework, Res, R};
 use std::any::Any;
 use std::future::Future;
 
-use super::ModuleState;
-
 pub trait Module: Any {
-  fn init(&mut self, fw: &mut Framework) -> impl Future<Output = R>;
+  fn init(&mut self, _: &mut Framework) -> impl Future<Output = R>;
+  //{
+  //  async {Ok(())}
+  //}
 }
 
 impl Framework {

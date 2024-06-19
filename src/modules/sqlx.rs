@@ -2,22 +2,28 @@
 //
 // This project is dual licensed under MIT and Apache.
 
+use crate::core::*;
+use derivative::Derivative;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
 once_cell!(db, POOL: PgPool);
 
-module!(
-  Postgres {
-    db_url: String = expect_env!("DATABASE_URL"),
-    options: PgPoolOptions = PgPoolOptions::new(),
-  }
+#[derive(Derivative)]
+#[derivative(Default)]
+pub struct Postgres {
+  #[derivative(Default(value = "expect_env!(\"DATABASE_URL\")"))]
+  pub db_url: String,
+  pub options: PgPoolOptions,
+}
 
-  fn init(fw) {
+impl Module for Postgres {
+  async fn init(&mut self, fw: &mut Framework) -> R {
     runtime!(fw, |m| {
       POOL.set(m.options.connect(&m.db_url).await?)?;
-      #[cfg(not(debug_assertions))]  
+      #[cfg(not(debug_assertions))]
       sqlx::migrate!("./sql").run(db()).await.unwrap();
       Ok(None)
     });
+    Ok(())
   }
-);
+}

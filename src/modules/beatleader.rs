@@ -6,7 +6,11 @@ use super::cron::Cron;
 use crate::{
   core::*,
   modules::{poise::Poise, reqwest::req, sqlx::Postgres, steam::pagination_buttons},
-  query::{neko::all_steam_connections, steam::ratelimit}, schema::{neko::{UsersSteam, UsersDiscord}, discord::Users},
+  query::{neko::all_steam_connections, steam::ratelimit},
+  schema::{
+    discord::Users,
+    neko::{UsersDiscord, UsersSteam},
+  },
 };
 use poise::serenity_prelude::{CollectComponentInteraction, InteractionResponseType};
 use serde::Deserialize;
@@ -20,17 +24,14 @@ impl Module for BeatLeader {
     fw.req_module::<Postgres>().await?;
     let poise = fw.req_module::<Poise>().await?;
     poise.commands.push(beetleader());
-    let cron = fw.req_module::<Cron>().await?;
-    cron.jobs.push(Job::new_async("0 0 */1 * * *", |_id, _jsl| {
-      Box::pin(async move {
-        update_scores().await.unwrap();
-      })
-    })?);
+    cron!(fw, "0 0 */1 * * *", || {
+      update_scores().await.unwrap();
+    });
     Ok(())
   }
 }
-use crate::modules::poise::Ctx;
 
+use crate::modules::poise::Ctx;
 
 const SIZE: u64 = 15;
 const PAGES: u64 = 100; //todo
@@ -160,14 +161,12 @@ pub async fn beetleader(ctx: Ctx<'_>) -> R {
   Ok(())
 }
 
-
 #[derive(FromRow)]
 pub struct QueryOutput {
   pub row_num: i64,
   pub name: String,
   pub pp: f32,
 }
-
 
 pub async fn update_scores() -> R {
   let c = all_steam_connections().await?;
@@ -201,7 +200,7 @@ pub async fn update_scores() -> R {
   Ok(())
 }
 
-use sea_query::{Iden, OnConflict, Query, WindowStatement, Func, Alias, Order};
+use sea_query::{Alias, Func, Iden, OnConflict, Order, Query, WindowStatement};
 
 #[derive(Iden)]
 #[iden(rename = "beetleader_lb")]

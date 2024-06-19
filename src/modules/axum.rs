@@ -4,22 +4,18 @@
 
 use crate::core::*;
 use axum::{Router, Server};
+use derivative::Derivative;
 use futures::future::BoxFuture;
 use std::net::Ipv4Addr;
 
+#[derive(Derivative)]
+#[derivative(Default)]
 pub struct Axum {
   pub routes: Vec<fn(Router) -> BoxFuture<'static, Res<Router>>>,
+  #[derivative(Default(value = "8080"))]
   pub port: u16,
 }
 
-impl Default for Axum {
-  fn default() -> Self {
-    Self {
-      routes: vec![],
-      port: 8080,
-    }
-  }
-}
 
 impl Module for Axum {
   async fn init(&mut self, fw: &mut Framework) -> R {

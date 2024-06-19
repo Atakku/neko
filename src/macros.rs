@@ -125,28 +125,37 @@ macro_rules! runtime {
   };
 }
 
-macro_rules! module {
-  ($name:ident {$($pn:ident: $pt:ty = $pd:expr),*$(,)?} fn init($fw:ident) $block:block) => {
-    pub struct $name {
-      $(pub $pn: $pt),*
-    }
-
-    impl Default for $name {
-      fn default() -> Self { 
-        Self {
-          $($pn: $pd),*
-        }
-      }
-    }
-
-    impl crate::core::Module for $name {
-      async fn init(&mut self, $fw: &mut crate::core::Framework) -> crate::core::R {
-        $block
-        Ok(())
-      }
-    }
+macro_rules! cron {
+  ($fw:ident, $shed:literal, || $block:block) => {
+    let cron = $fw.req_module::<Cron>().await?;
+    cron.jobs.push(Job::new_async($shed, |_id, _jsl| {
+      Box::pin(async move $block)
+    })?);
   };
 }
+
+//macro_rules! module {
+//  ($name:ident {$($pn:ident: $pt:ty = $pd:expr),*$(,)?} fn init($fw:ident) $block:block) => {
+//    pub struct $name {
+//      $(pub $pn: $pt),*
+//    }
+//
+//    impl Default for $name {
+//      fn default() -> Self { 
+//        Self {
+//          $($pn: $pd),*
+//        }
+//      }
+//    }
+//
+//    impl crate::core::Module for $name {
+//      async fn init(&mut self, $fw: &mut crate::core::Framework) -> crate::core::R {
+//        $block
+//        Ok(())
+//      }
+//    }
+//  };
+//}
  
 
 macro_rules! col {

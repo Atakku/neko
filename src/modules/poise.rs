@@ -6,6 +6,7 @@ use crate::{
   core::*,
   modules::fluent::{loc, localize, Fluent, FluentBundle, FluentBundles},
 };
+use derivative::Derivative;
 use futures::future::join_all;
 use poise::{
   serenity_prelude::{Context as SCtx, GatewayIntents},
@@ -22,47 +23,51 @@ pub type EventHandler = for<'a> fn(&'a SCtx, &'a Event<'a>) -> BoxFuture<'a, R>;
 // TODO: add documentation,
 // Poise wrapper module, to let other modules add commands and subscribe to events easily
 
-module!(
-  Poise {
-    token: String = expect_env!("DISCORD_TOKEN"),
-    intents: GatewayIntents = GatewayIntents::GUILD_MESSAGES,
-    commands: Vec<Cmd> = vec![],
-    event_handlers: Vec<EventHandler> = vec![],
+#[derive(Derivative)]
+#[derivative(Default)]
+pub struct Poise {
+  #[derivative(Default(value = "expect_env!(\"DISCORD_TOKEN\")"))]
+  pub token: String,
+  #[derivative(Default(value = "GatewayIntents::GUILD_MESSAGES"))]
+  pub intents: GatewayIntents,
+  pub commands: Vec<Cmd>,
+  pub event_handlers: Vec<EventHandler>,
+}
+
+impl Module for Poise {
+  async fn init(&mut self, fw: &mut crate::core::Framework) -> crate::core::R {
+    {
+      fw.req_module::<Fluent>().await?;
+      runtime!(fw, |m| {
+        Ok(Some(tokio::spawn(async move {
+          Fw::builder()
+            .token(m.token)
+            .intents(m.intents)
+            .options(FrameworkOptions {
+              commands: localized_commands(m.commands, loc()),
+              event_handler: |c, e, _f, ehs| {
+                Box::pin(async move {
+                  join_all(ehs.iter().map(|eh| (eh)(c, e))).await;
+                  Ok(())
+                })
+              },
+              ..Default::default()
+            })
+            .setup(move |_c, _r, _f| Box::pin(async move { Ok(m.event_handlers) }))
+            .run()
+            .await?;
+          Ok(())
+        })))
+      });
+    }
+    Ok(())
   }
+}
 
-  fn init(fw) {
-    fw.req_module::<Fluent>().await?;
-    runtime!(fw, |m| {
-      Ok(Some(tokio::spawn(async move {
-        Fw::builder()
-          .token(m.token)
-          .intents(m.intents)
-          .options(FrameworkOptions {
-            commands: localized_commands(m.commands, loc()),
-            event_handler: |c, e, _f, ehs| {
-              Box::pin(async move {
-                join_all(ehs.iter().map(|eh| (eh)(c, e))).await;
-                Ok(())
-              })
-            },
-            ..Default::default()
-          })
-          .setup(move |_c, _r, _f| {
-            Box::pin(async move { Ok(m.event_handlers) })
-          })
-          .run()
-          .await?;
-        Ok(())
-      })))
-    });
-  }
-);
-
-
-const LOCALES: [&str; 31] = [
-  "id", "da", "de", "en-GB", "en-US", "es-ES", "fr", "hr", "it", "lt", "hu", "nl", "no", "pl",
-  "pt-BR", "ro", "fi", "sv-SE", "vi", "tr", "cs", "el", "bg", "ru", "uk", "hi", "th", "zh-CN",
-  "ja", "zh-TW", "ko",
+const LOCALES: [&str; 32] = [
+  "id", "da", "de", "en-GB", "en-US", "es-ES", "es-419", "fr", "hr", "it", "lt", "hu", "nl", "no",
+  "pl", "pt-BR", "ro", "fi", "sv-SE", "vi", "tr", "cs", "el", "bg", "ru", "uk", "hi", "th",
+  "zh-CN", "ja", "zh-TW", "ko",
 ];
 
 fn localized_commands(mut commands: Vec<Cmd>, fb: &FluentBundles) -> Vec<Cmd> {
