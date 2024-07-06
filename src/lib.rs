@@ -1,4 +1,4 @@
-// Copyright 2023 Atakku <https://atakku.dev>
+// Copyright 2024 Atakku <https://atakku.dev>
 //
 // This project is dual licensed under MIT and Apache.
 
@@ -11,15 +11,36 @@ pub mod macros;
 
 pub mod core;
 
-pub mod interface {
-  automod::dir!(pub "src/interface");
-}
 pub mod modules {
   automod::dir!(pub "src/modules");
 }
-pub mod query {
-  automod::dir!(pub "src/query");
-}
-pub mod schema {
-  automod::dir!(pub "src/schema");
+pub mod plugins {
+  #[path="atakku/plugin.rs"]
+  pub mod atakku;
+  #[path="beatleader/plugin.rs"]
+  pub mod beatleader;
+  #[path="discord/plugin.rs"]
+  pub mod discord;
+  #[path="drg/plugin.rs"]
+  pub mod drg;
+  #[path="findr/plugin.rs"]
+  pub mod findr;
+  #[path="ftvroles/plugin.rs"]
+  pub mod ftvroles;
+  #[path="gwaaa/plugin.rs"]
+  pub mod gwaaa;
+  #[path="neko/plugin.rs"]
+  pub mod neko;
+  #[path="radio/plugin.rs"]
+  pub mod radio;
+  #[path="starboard/plugin.rs"]
+  pub mod starboard;
+  #[path="steam/plugin.rs"]
+  pub mod steam;
+  #[path="streak/plugin.rs"]
+  pub mod streak;
+  #[path="warnsys/plugin.rs"]
+  pub mod warnsys;
+  #[path="welcomer/plugin.rs"]
+  pub mod welcomer;
 }

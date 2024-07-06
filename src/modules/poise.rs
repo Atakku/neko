@@ -1,4 +1,4 @@
-// Copyright 2023 Atakku <https://atakku.dev>
+// Copyright 2024 Atakku <https://atakku.dev>
 //
 // This project is dual licensed under MIT and Apache.
 
@@ -12,7 +12,6 @@ use poise::{
   serenity_prelude::{Context as SCtx, GatewayIntents},
   BoxFuture, Command, Context, Event, FrameworkContext, FrameworkOptions,
 };
-use std::vec;
 
 pub type Fw = poise::Framework<Vec<EventHandler>, Err>;
 pub type FwCtx<'a> = FrameworkContext<'a, Vec<EventHandler>, Err>;

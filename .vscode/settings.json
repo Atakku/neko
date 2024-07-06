@@ -7,7 +7,9 @@
   },
   "rust-analyzer.cargo.features": "all",
   "material-icon-theme.folders.associations": {
-    "query": "database"
+    "query": "database",
+    "modules": "components",
+    "runtime": "app"
   },
   "files.associations": {
     "*.svg": "jinja-html"

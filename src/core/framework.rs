@@ -1,4 +1,4 @@
-// Copyright 2023 Atakku <https://atakku.dev>
+// Copyright 2024 Atakku <https://atakku.dev>
 //
 // This project is dual licensed under MIT and Apache.
 
@@ -6,7 +6,6 @@ use crate::core::{
   state::{AnyData, State},
   Res, R,
 };
-use core::future::Future;
 use futures::future::{join_all, LocalBoxFuture};
 use tokio::task::JoinHandle;
 
