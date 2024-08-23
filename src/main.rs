@@ -22,7 +22,7 @@ async fn main() -> R {
     fw.init_module(welcomer::Welcomer).await?;
     fw.init_module(ftvroles::FTVRoles).await?;
     fw.init_module(starboard::Starboard).await?;
-    fw.init_module(findr::Findr).await?;
+    //fw.init_module(findr::Findr).await?;
     fw.init_module(streak::PostStreak).await?;
   fw.run().await?;
   Ok(())
