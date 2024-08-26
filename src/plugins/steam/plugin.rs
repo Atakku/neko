@@ -97,11 +97,10 @@ pub async fn minor_update() -> R {
   Ok(())
 }
 
-cmd_group!(steam, "user", "app", "guild", "top");
+cmd_group!(steam, "user", "app", "top");
 
 cmd_group!(user, "user::top");
 cmd_group!(app, "app::top");
-cmd_group!(guild, "guild::top");
 
 #[poise::command(prefix_command, slash_command)]
 pub async fn top(ctx: Ctx<'_>, by: By, of: Of) -> R {
@@ -120,9 +119,8 @@ mod user {
   #[poise::command(prefix_command, slash_command)]
   pub async fn top(ctx: Ctx<'_>, by: By, user: Option<UserId>) -> R {
     let user = user.unwrap_or(ctx.author().id);
-    let of = Of::Apps;
-    let title = format!("Users's ({user}) top of {of} by {by}");
-    handle(ctx, title, of, by, At::User(user.0 as i64)).await
+    let title = format!("Users's ({user}) top of apps by {by}");
+    handle(ctx, title, Of::Apps, by, At::User(user.0 as i64)).await
   }
 }
 mod app {
@@ -137,71 +135,14 @@ mod app {
       },
     },
   };
-  use poise::ChoiceParameter;
-  #[derive(ChoiceParameter)]
-  enum AppTop {
-    Users,
-    Guilds,
-  }
-
-  impl Into<Of> for AppTop {
-    fn into(self) -> Of {
-      match self {
-        AppTop::Users => Of::Users,
-        AppTop::Guilds => Of::Guilds,
-      }
-    }
-  }
 
   #[poise::command(prefix_command, slash_command)]
-  pub async fn top(ctx: Ctx<'_>, by: By, of: AppTop, #[autocomplete = "steam_apps"] app: i32) -> R {
-    let title = format!("Apps's ({app}) top of {of} by {by}");
-    handle(ctx, title, of.into(), by, At::App(app)).await
+  pub async fn top(ctx: Ctx<'_>, by: By, #[autocomplete = "steam_apps"] app: i32) -> R {
+    let title = format!("Apps's ({app}) top of users by {by}");
+    handle(ctx, title, Of::Users, by, At::App(app)).await
   }
 }
 
-mod guild {
-  use super::{
-    handle,
-    query::{At, By, Of},
-  };
-  use crate::{core::R, modules::poise::Ctx, plugins::neko::autocomplete::discord_guilds};
-  use poise::{serenity_prelude::GuildId, ChoiceParameter};
-
-  #[derive(ChoiceParameter)]
-  enum GuildTop {
-    Users,
-    Apps,
-  }
-
-  impl Into<Of> for GuildTop {
-    fn into(self) -> Of {
-      match self {
-        GuildTop::Users => Of::Users,
-        GuildTop::Apps => Of::Apps,
-      }
-    }
-  }
-
-  #[poise::command(prefix_command, slash_command)]
-  pub async fn top(
-    ctx: Ctx<'_>,
-    by: By,
-    of: GuildTop,
-    //#[autocomplete = "steam_apps"] app: Option<i32>,
-    #[autocomplete = "discord_guilds"] guild: Option<String>,
-  ) -> R {
-    let guild = guild.unwrap_or(
-      ctx
-        .guild_id()
-        .unwrap_or(GuildId(1232659990993702943))
-        .0
-        .to_string(),
-    );
-    let title = format!("Guild's ({guild}) top of {of} by {by}");
-    handle(ctx, title, of.into(), by, At::Guild(guild.parse::<i64>()?)).await
-  }
-}
 const SIZE: u64 = 15;
 const PAGES: u64 = 100; //todo
 

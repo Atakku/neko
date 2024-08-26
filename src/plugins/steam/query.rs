@@ -152,24 +152,29 @@ pub enum By {
 
 pub enum At {
   User(i64),
-  Guild(i64),
   App(i32),
   None,
 }
 
 #[derive(ChoiceParameter)]
 pub enum Of {
-  Apps,   // Top apps in user, guild, or global, by hours or count
-  Guilds, // Top guilds by app hours or app count, in app or global
-  Users,  // Top users by app hours or app count, in guild or global
+  Apps,   // Top apps in user, or guild, by hours or count
+  Users,  // Top users by app hours or app count, in gyuk
 }
 
 // Top of (Apps, Guilds, Users) by (Playtime, Ownership) at (User, Guild, App, Global)
 pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
   let mut qb = Query::select();
   qb.from(super::schema::Playdata::Table);
-  nekoid_eq(&mut qb, &of, &at);
-  member_eq(&mut qb, &of, &at);
+  nekoid_eq(&mut qb);
+  member_eq(&mut qb);
+
+  //use discord::schema::{Guilds, Members};
+  //qb.from(Guilds::Table);
+  //qb.and_where(ex_col!(Guilds, Id).equals(col!(Members, GuildId)));
+  //qb.group_by_col(col!(Guilds, Id));
+  //qb.columns([col!(Guilds, Id), col!(Guilds, Name)]);
+
   match of {
     Of::Apps => {
       use super::schema::{Apps, Playdata};
@@ -177,13 +182,6 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
       qb.and_where(ex_col!(Apps, Id).equals(col!(Playdata, AppId)));
       qb.group_by_col(col!(Apps, Id));
       qb.columns([col!(Apps, Id), col!(Apps, Name)]);
-    }
-    Of::Guilds => {
-      use discord::schema::{Guilds, Members};
-      qb.from(Guilds::Table);
-      qb.and_where(ex_col!(Guilds, Id).equals(col!(Members, GuildId)));
-      qb.group_by_col(col!(Guilds, Id));
-      qb.columns([col!(Guilds, Id), col!(Guilds, Name)]);
     }
     Of::Users => {
       use discord::schema::Users;
@@ -219,20 +217,15 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
   }
   match at {
     At::User(id) => qb.and_where(ex_col!(neko::schema::UsersDiscord, DiscordId).eq(id)),
-    At::Guild(id) => qb.and_where(ex_col!(discord::schema::Members, GuildId).eq(id)),
     At::App(id) => qb.and_where(ex_col!(steam::schema::Playdata, AppId).eq(id)),
     At::None => &qb,
   };
+  qb.and_where(ex_col!(discord::schema::Members, GuildId).eq(1232659990993702943_i64));
   qb.order_by(Alias::new("sum_count"), Order::Desc);
   qb
 }
 
-fn nekoid_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
-  not_match!(of, Of::Guilds | Of::Users, {
-    not_match!(at, At::Guild(_) | At::User(_), {
-      return;
-    });
-  });
+fn nekoid_eq(qb: &mut SelectStatement) {
   use neko::schema::*;
   qb.from(UsersSteam::Table);
   qb.from(UsersDiscord::Table);
@@ -240,12 +233,7 @@ fn nekoid_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
   qb.and_where(ex_col!(UsersSteam, SteamId).equals(col!(steam::schema::Playdata, UserId)));
 }
 
-fn member_eq(qb: &mut SelectStatement, of: &Of, at: &At) {
-  not_match!(of, Of::Guilds, {
-    not_match!(at, At::Guild(_), {
-      return;
-    });
-  });
+fn member_eq(qb: &mut SelectStatement) {
   use discord::schema::*;
   use neko::schema::*;
   qb.from(Members::Table);
