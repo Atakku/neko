@@ -38,7 +38,9 @@ fn event_handler<'a>(
         };
 
         let all: Vec<_> = ROLES.iter().flat_map(|r| r.1).map(|r| r.0).collect();
-        let id: u64 = i.data.custom_id.parse().unwrap();
+        let Ok(id) = i.data.custom_id.parse::<u64>() else {
+          return Ok(());
+        };
 
         if all.contains(&id) {
           i.defer_ephemeral(c).await?;
