@@ -139,7 +139,6 @@ const ROLES: &[(&str, &[(u64, &str, bool, &str)])] = &[
       (1232861476255961158, "🐸", false, ""),
       (1232861474318192640, "🧀", false, ""),
       (1247387189935865937, "🐶", false, ""),
-      (1282780019457785907, "🤨", false, ""),
       (1247387587577122826, "1240349675198873600", true, ""),
     ],
   ),
@@ -175,6 +174,7 @@ const ROLES: &[(&str, &[(u64, &str, bool, &str)])] = &[
     **📰 - News** (A big game update, free to keep or huge sale, or other non-server news)\n\
     **💩 - Shitpost** (For funny, or not so funny things)\n\
     **👋 - Welcome** (Get notified every time someone gets verified)\n\
+    **🤨 - Surely There Is Nothing Inconspicuous About This Role** (Yep, there is nothing inconspicuous about this role)\n\
     **🔌 - Pingplug** (Free for all, take at your own risk)",
     &[
       (1233042177408368652, "📢", false, ""),
@@ -182,6 +182,7 @@ const ROLES: &[(&str, &[(u64, &str, bool, &str)])] = &[
       (1233042179191210024, "📰", false, ""),
       (1233042174904373248, "💩", false, ""),
       (1277279750469062667, "👋", false, ""),
+      (1282780019457785907, "🤨", false, ""),
       (1233042180252237834, "🔌", false, ""),
     ],
   ),
