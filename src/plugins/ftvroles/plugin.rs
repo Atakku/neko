@@ -174,7 +174,7 @@ const ROLES: &[(&str, &[(u64, &str, bool, &str)])] = &[
     **📰 - News** (A big game update, free to keep or huge sale, or other non-server news)\n\
     **💩 - Shitpost** (For funny, or not so funny things)\n\
     **👋 - Welcome** (Get notified every time someone gets verified)\n\
-    **<:dumkisser:1291846838084702228> - GAY SEX ROLE (Get notified when https://discord.com/channels/1232659990993702943/1247639243476439123 occurs)**\n\
+    **<:dumkisser:1291846838084702228> - GAY SEX ROLE** (Get notified when https://discord.com/channels/1232659990993702943/1247639243476439123 occurs)\n\
     **🔌 - Pingplug** (Free for all, take at your own risk)",
     &[
       (1233042177408368652, "📢", false, ""),
