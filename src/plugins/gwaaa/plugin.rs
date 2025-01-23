@@ -572,7 +572,7 @@ struct AuthorizationCallback {
 }
 #[derive(serde::Deserialize)]
 struct Bruh {
-  uuid: String
+  uuid: Uuid
 }
 
 
