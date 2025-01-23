@@ -336,6 +336,7 @@ async fn callback_minecraft(
 }
 
 async fn whitelist(Path(uuid): Path<Uuid>) -> axum::response::Result<Response> {
+  println!("uuid: {uuid}");
   use UsersMinecraft::*;
   let mut qb = SelectStatement::new();
   qb.from(Table);
