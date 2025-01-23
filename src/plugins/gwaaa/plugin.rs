@@ -320,10 +320,7 @@ async fn callback_minecraft(
     .send()
     .await.unwrap();
 
-  let text = res.text().await.unwrap();
-  println!("{text}");
-
-  let Ok(response) = serde_json::from_str::<MCTokenRes>(&text) else {
+  let Ok(response) =  res.json::<MCTokenRes>().await else {
     return Err("NOT VALID GWAAAA".into());
   };
 
@@ -338,12 +335,12 @@ async fn callback_minecraft(
   Ok(Redirect::to("/settings").into_response())
 }
 
-async fn whitelist(Path(user_id): Path<Uuid>) -> axum::response::Result<Response> {
+async fn whitelist(Path(uuid): Path<Uuid>) -> axum::response::Result<Response> {
   use UsersMinecraft::*;
   let mut qb = SelectStatement::new();
   qb.from(Table);
   qb.columns([McUuid]);
-  qb.and_where(Expr::col(McUuid).eq(user_id));
+  qb.and_where(Expr::col(McUuid).eq(uuid));
   if fetch_optional!(&qb, (Uuid,)).unwrap_or(None).is_some() {
     Ok(StatusCode::OK.into_response())
   } else {
