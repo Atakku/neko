@@ -15,8 +15,8 @@ use poise::serenity_prelude::json::json;
 use regex::Regex;
 use reqwest::{header, Client, StatusCode};
 use sea_query::{Alias, Expr, Func, Iden, InsertStatement, OnConflict, Query, SelectStatement};
-use sqlx::types::Uuid;
 use url::Url;
+use uuid::Uuid;
 
 async fn settings(session: SessionPgSession) -> Response {
   let Some(id) = session.get::<i32>("neko_id") else {
@@ -336,7 +336,6 @@ async fn callback_minecraft(
 }
 
 async fn whitelist(Path(uuid): Path<Uuid>) -> axum::response::Result<Response> {
-  println!("testing {uuid}");
   use UsersMinecraft::*;
   let mut qb = SelectStatement::new();
   qb.from(Table);
