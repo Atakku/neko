@@ -24,8 +24,7 @@ impl crate::core::Module for Reqwest {
   async fn init(&mut self, fw: &mut crate::core::Framework) -> crate::core::R {
     {
       runtime!(fw, |m| {
-        let jar = Arc::new(Jar::default());
-        CLIENT.set(Client::builder().user_agent(m.user_agent).cookie_provider(jar.clone()).build()?)?;
+        CLIENT.set(Client::builder().user_agent(m.user_agent).build()?)?;
         Ok(None)
       });
     }
