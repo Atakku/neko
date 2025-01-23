@@ -63,16 +63,7 @@ struct RedirForm {
 
 async fn login_now(session: SessionPgSession) -> Response {
   match session.get::<i32>("neko_id") {
-    Some(id) => {
-      let mut res = format!(
-      "you are already logged in, and your id is '{id}'<br><a href=\"/logout\">log me out!!!!!</a>"
-    )
-      .into_response();
-      res
-        .headers_mut()
-        .insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
-      res
-    }
+    Some(_) => Redirect::to("/").into_response(),
     None => Redirect::to("/link/discord").into_response(),
   }
 }
