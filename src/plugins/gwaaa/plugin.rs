@@ -22,7 +22,7 @@ async fn settings(session: SessionPgSession) -> Response {
   let Some(id) = session.get::<i32>("neko_id") else {
     return Redirect::to("/login").into_response();
   };
-  let mut res = format!("your id is '{id}'<br><a href=\"/link/discord\">link a discord acc</a><br><a href=\"/link/steam\">link a steam acc</a><br><a href=\"/link/github\">link a github acc</a><br><a href=\"/link/anilist\">link an anilist acc</a> <- warning, this technically gives full anilist access to neko.rs (as their oauth endpoint does not have any scopes), go complain to joshstar or smth").into_response();
+  let mut res = format!("your id is '{id}'<br><a href=\"/link/discord\">link a discord acc</a><br><a href=\"/link/steam\">link a steam acc</a><br><a href=\"/link/github\">link a github acc</a><br><a href=\"/link/anilist\">link an anilist acc</a> <- warning, this technically gives full anilist access to neko.rs (as their oauth endpoint does not have any scopes), go complain to joshstar or smth<br><a href=\"/link/minecraft\">link a minecraft acc</a>").into_response();
   res
     .headers_mut()
     .insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
