@@ -12,7 +12,7 @@ use crate::{
 };
 use futures::StreamExt;
 use poise::{
-  serenity_prelude::{Context, GatewayIntents, GuildId, Member, RoleId, User, UserId},
+  serenity_prelude::{Context, GatewayIntents, GuildId, Member, Role, RoleId, User, UserId},
   Event,
 };
 use sea_query::{Expr, OnConflict, Query};
@@ -90,7 +90,11 @@ fn event_handler() -> EventHandler {
         } => {
           if !m.user.bot && check_guild_whitelist(m.guild_id).await? {
             update_users(vec![m.user.clone()]).await?;
-            update_members(vec![m.clone()]).await?;
+            if m.roles.contains(&RoleId(1232817578037084262)) {
+              update_members(vec![m.clone()]).await?;
+            } else {
+              remove_member(m.guild_id, m.user.id).await?;
+            }
           }
         }
         GuildMemberRemoval {
