@@ -314,6 +314,9 @@ async fn callback_minecraft(
     redirect_uri: &format!("{}/callback/minecraft", root_domain().await),
   };
 
+  
+  println!("{form_str:?}");
+
   let res = req()
     .post("https://mc-auth.com/oAuth2/token")
     .header("Accept", "application/json")
@@ -573,7 +576,7 @@ struct AuthorizationCallback {
   state: String,
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, Debug)]
 struct DiscordTokenReq<'a> {
   client_id: &'a str,
   client_secret: &'a str,
