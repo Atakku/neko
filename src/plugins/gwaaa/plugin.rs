@@ -117,8 +117,8 @@ impl crate::core::Module for Gwaaa {
               .route("/link/steam", get(link_steam))
               .route("/link/discord", get(link_discord))
               .route("/link/minecraft", get(link_minecraft))
-              .route("/whitelist/{uuid}", get(whitelist))
               .layer(SessionLayer::new(session_store))
+              .route("/whitelist/{uuid}", get(whitelist))
               .route("/metrics", get(metrics)),
           )
         })
@@ -336,9 +336,9 @@ async fn callback_minecraft(
 }
 
 async fn whitelist(Path(uuid): Path<Uuid>) -> axum::response::Result<Response> {
+  println!("testing {uuid}");
   use UsersMinecraft::*;
   let mut qb = SelectStatement::new();
-  println!("testing {uuid}");
   qb.from(Table);
   qb.column(McUuid);
   qb.and_where(Expr::col(McUuid).eq(uuid));
