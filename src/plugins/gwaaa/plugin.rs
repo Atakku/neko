@@ -5,6 +5,7 @@ use crate::{
 };
 use crate::plugins::steam::
 query::{update_playdata, update_users};
+use axum::extract::Path;
 use axum::{
   http::HeaderValue,
   response::{IntoResponse, Redirect, Response},
@@ -15,7 +16,8 @@ use axum_session::{SessionConfig, SessionLayer, SessionPgSession, SessionPgSessi
 use poise::serenity_prelude::json::json;
 use regex::Regex;
 use reqwest::{header, StatusCode};
-use sea_query::{Alias, Func, InsertStatement, OnConflict, Query, SelectStatement};
+use sea_query::{Alias, Expr, Func, Iden, InsertStatement, OnConflict, Query, SelectStatement};
+use sqlx::types::Uuid;
 use url::Url;
 
 async fn settings(session: SessionPgSession) -> Response {
@@ -111,10 +113,13 @@ impl crate::core::Module for Gwaaa {
               .route("/callback/github", get(callback_github))
               .route("/callback/steam", get(callback_steam))
               .route("/callback/discord", get(callback_discord))
+              .route("/callback/minecraft", get(callback_minecraft))
               .route("/link/anilist", get(link_anilist))
               .route("/link/github", get(link_github))
               .route("/link/steam", get(link_steam))
               .route("/link/discord", get(link_discord))
+              .route("/link/minecraft", get(link_minecraft))
+              .route("/whitelist/{uuid}", get(whitelist))
               .layer(SessionLayer::new(session_store))
               .route("/metrics", get(metrics)),
           )
@@ -268,6 +273,11 @@ once_cell!(tokenreq_github, TOKENREQ_GITHUB: String, {
 once_cell!(oauth_anilist_id, OAUTH_ANILIST_ID: String, {expect_env!("OAUTH_ANILIST_ID")});
 once_cell!(oauth_anilist_secret, OAUTH_ANILIST_SECRET: String, {expect_env!("OAUTH_ANILIST_SECRET")});
 
+
+once_cell!(oauth_minecraft_id, OAUTH_MINECRAFT_ID: String, {expect_env!("OAUTH_MINECRAFT_ID")});
+once_cell!(oauth_minecraft_secret, OAUTH_MINECRAFT_SECRET: String, {expect_env!("OAUTH_MINECRAFT_SECRET")});
+
+
 once_cell!(redirect_anilist, REDIRECT_ANILIST: String, {
   let cb = format!("{}/callback/anilist", root_domain().await);
   format!("https://anilist.co/api/v2/oauth/authorize\
@@ -275,9 +285,93 @@ once_cell!(redirect_anilist, REDIRECT_ANILIST: String, {
   urlencoding::encode(&cb))
 });
 
+
+once_cell!(redirect_minecraft, REDIRECT_MINECRAFT: String, {
+  let cb = format!("{}/callback/minecraft", root_domain().await);
+  format!("https://mc-auth.com/oAuth2/authorize\
+  ?client_id=3551875741534651542&redirect_uri={}&response_type=code&scope=profile&state=todo",
+  urlencoding::encode(&cb))
+});
+
 async fn link_anilist() -> axum::response::Result<Response> {
   Ok(Redirect::to(redirect_anilist().await).into_response())
 }
+
+async fn link_minecraft() -> axum::response::Result<Response> {
+  Ok(Redirect::to(redirect_minecraft().await).into_response())
+}
+
+
+async fn callback_minecraft(
+  session: SessionPgSession,
+  Form(cb): Form<AuthorizationCallback>,
+) -> axum::response::Result<Response> {
+  let Some(id) = session.get::<i32>("neko_id") else {
+    return Ok(Redirect::to("/login").into_response());
+  };
+  if cb.state != "todo" {
+    return Ok(StatusCode::IM_A_TEAPOT.into_response());
+  }
+  let form_str = serde_json::to_string(&DiscordTokenReq {
+    client_id: &"3551875741534651542",
+    client_secret: &expect_env!("OAUTH_MINECRAFT_SECRET"),
+    grant_type: &"authorization_code",
+    code: &cb.code,
+    redirect_uri: &format!("{}/callback/discord", root_domain().await),
+  })
+  .unwrap();
+
+  let Ok(response) = req()
+    .post("https://mc-auth.com/oAuth2/token")
+    .header("Content-Type", "application/json")
+    .body(form_str)
+    .send()
+    .await
+    .unwrap()
+    .json::<MCTokenRes>()
+    .await else {
+      
+    return Err("NOT VALID GWAAAA".into());
+    };
+  
+    use UsersMinecraft::*;
+    let mut qb = InsertStatement::new();
+    qb.into_table(Table);
+    qb.columns([NekoId, McUuid]);
+    qb.values([id.into(), response.data.uuid.into()]).unwrap();
+    qb.on_conflict(OnConflict::column(NekoId).do_nothing().to_owned());
+    execute!(&qb).unwrap();
+  
+    Ok(Redirect::to("/settings").into_response())
+}
+
+
+
+async fn whitelist(
+  Path(user_id): Path<Uuid>,
+) -> axum::response::Result<Response> {
+  use UsersMinecraft::*;
+    let mut qb = SelectStatement::new();
+    qb.from(Table);
+    qb.columns([McUuid]);
+    qb.and_where(Expr::col(McUuid).eq(user_id));
+    if fetch_optional!(&qb, (Uuid,)).unwrap_or(None).is_some() {
+      Ok(StatusCode::OK.into_response())
+    } else {
+      Ok(StatusCode::NOT_FOUND.into_response())
+    }
+}
+
+
+#[derive(Iden)]
+#[iden(rename = "neko_users_minecraft")]
+pub enum UsersMinecraft {
+  Table,
+  NekoId,
+  McUuid,
+}
+
+
 
 async fn link_discord() -> axum::response::Result<Response> {
   Ok(Redirect::to(redirect_discord().await).into_response())
@@ -499,6 +593,14 @@ struct DiscordTokenReq<'a> {
   grant_type: &'a str,
   code: &'a str,
   redirect_uri: &'a str,
+}
+
+#[derive(serde::Deserialize)]
+struct MCTokenRes {
+  data: MCData,
+}#[derive(serde::Deserialize)]
+struct MCData {
+  uuid: Uuid
 }
 #[derive(serde::Deserialize)]
 struct TokenRes {

@@ -16,14 +16,12 @@ async fn main() -> R {
     fw.init_module(steam::Steam).await?;
     fw.init_module(drg::DeepRockGalactic).await?;
     fw.init_module(gwaaa::Gwaaa {}).await?;
-    fw.init_module(warnsys::WarnSystem {}).await?;
+    //fw.init_module(warnsys::WarnSystem {}).await?;
     fw.init_module(beatleader::BeatLeader {}).await?;
-    fw.init_module(radio::Radio {}).await?;
+    //fw.init_module(radio::Radio {}).await?;
     fw.init_module(welcomer::Welcomer).await?;
-    fw.init_module(ftvroles::FTVRoles).await?;
+    //fw.init_module(ftvroles::FTVRoles).await?;
     fw.init_module(starboard::Starboard).await?;
-    //fw.init_module(findr::Findr).await?;
-    //fw.init_module(streak::PostStreak).await?;
   fw.run().await?;
   Ok(())
 }

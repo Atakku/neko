@@ -3,7 +3,6 @@
 // This project is dual licensed under MIT and Apache.
 
 #![feature(trait_alias)]
-#![feature(async_closure)]
 #![feature(sort_floats)]
 
 #[macro_use]
@@ -23,24 +22,20 @@ pub mod plugins {
   pub mod discord;
   #[path="drg/plugin.rs"]
   pub mod drg;
-  #[path="findr/plugin.rs"]
-  pub mod findr;
-  #[path="ftvroles/plugin.rs"]
-  pub mod ftvroles;
+  //#[path="ftvroles/plugin.rs"]
+  //pub mod ftvroles;
   #[path="gwaaa/plugin.rs"]
   pub mod gwaaa;
   #[path="neko/plugin.rs"]
   pub mod neko;
-  #[path="radio/plugin.rs"]
-  pub mod radio;
+  //#[path="radio/plugin.rs"]
+  //pub mod radio;
   #[path="starboard/plugin.rs"]
   pub mod starboard;
   #[path="steam/plugin.rs"]
   pub mod steam;
-  #[path="streak/plugin.rs"]
-  pub mod streak;
-  #[path="warnsys/plugin.rs"]
-  pub mod warnsys;
+  //#[path="warnsys/plugin.rs"]
+  //pub mod warnsys;
   #[path="welcomer/plugin.rs"]
   pub mod welcomer;
 }

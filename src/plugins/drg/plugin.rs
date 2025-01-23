@@ -79,18 +79,20 @@ fn mutator_icon(mutator: String) -> String {
 
 fn warning_icon(warning: String) -> String {
   match warning.as_str() {
-    "Cave Leech Cluster" => "<:warning_cave_leech_cluster:1152827797476233266>",
-    "Elite Threat" => "<:warning_elite_threat:1152827795039342622>",
-    "Exploder Infestation" => "<:warning_exploder_infestation:1152827792636002375>",
-    "Haunted Cave" => "<:warning_haunted_cave:1152827790761136198>",
-    "Lethal Enemies" => "<:warning_lethal_enemies:1152827787493769286>",
-    "Low Oxygen" => "<:warning_low_oxygen:1152827817722118276>",
-    "Mactera Plague" => "<:warning_mactera_plague:1152827814538645618>",
-    "Parasites" => "<:warning_parasites:1152827811933978756>",
-    "Regenerative Bugs" => "<:warning_regenerative_bugs:1152827806976311437>",
-    "Rival Presence" => "<:warning_rival_presence:1152827803121762356>",
-    "Shield Disruption" => "<:warning_shield_disruption:1152827801330798592>",
-    "Swarmageddon" => "<:warning_swarmageddon:1152827799715975198>",
+    "Cave Leech Cluster" => "<:warn_cave_leech_cluster:1330838379499360266>",
+    "Elite Threat" => "<:warn_elite_threat:1330839232864059392>",
+    "Exploder Infestation" => "<:warn_exploder_infestation:1330839222114058260>",
+    "Haunted Cave" => "<:warn_haunted_cave:1330839171341750272>",
+    "Lethal Enemies" => "<:warn_lethal_enemies:1330839161665617972>",
+    "Low Oxygen" => "<:warn_low_oxygen:1330839123040272384>",
+    "Mactera Plague" => "<:warn_mactera_plague:1330839114240491531>",
+    "Parasites" => "<:warn_parasites:1330839103700336660>",
+    "Regenerative Bugs" => "<:warn_regenerative_bugs:1330839021223678038>",
+    "Rival Presence" => "<:warn_rival_presence:1330838921784856640>",
+    "Shield Disruption" => "<:warn_shield_disruption:1330838830173130783>",
+    "Swarmageddon" => "<:warn_swarmageddon:1330838695947014174>",
+    "Bulk Infestation" => "<:warn_bulk_infestation:1330839188475744322>",
+    "Lithophage Outbreak" => "<:warn_lithophage_outbreak:1330839133500739595>",
     _ => "<:warning_placeholder:1152827809983631390>",
   }
   .into()

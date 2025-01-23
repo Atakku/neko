@@ -9,9 +9,8 @@ use chrono::{Utc, Duration};
 use itertools::Itertools;
 use poise::serenity_prelude::{GuildId, RoleId, UserId};
 
-const GUILD: GuildId = GuildId(1038789193113014333);
-const ROLE: RoleId = RoleId(1040686138878341231);
-
+const GUILD: GuildId = GuildId(1232659990993702943);
+const ROLE: RoleId = RoleId(1232821172983562333);
 
 pub mod query;
 pub mod schema;
@@ -61,7 +60,7 @@ async fn rm_warn(ctx: crate::modules::poise::Ctx<'_>, id: String) -> R {
 }
 
 #[poise::command(slash_command)]
-async fn warn(ctx: crate::modules::poise::Ctx<'_>, user: UserId, reason: String) -> R {
+async fn warn(ctx: crate::modules::poise::Ctx<'_>, user: UserId, reason: String, ) -> R {
   if ctx.guild_id() != Some(GUILD) {
     ctx.reply("This command is only permitted in femboy.tv").await?;
     return Ok(())
@@ -90,22 +89,10 @@ fn match_warn<'a>(warns: usize) -> (Duration, &'a str) {
       (Duration::try_minutes(1).unwrap(), "1 minute")
     }
     1 => {
-      (Duration::try_minutes(5).unwrap(), "5 minutes")
-    }
-    2 => {
-      (Duration::try_minutes(30).unwrap(), "30 minutes")
-    }
-    3 => {
-      (Duration::try_hours(6).unwrap(), "6 hours")
-    }
-    4 => {
       (Duration::try_days(1).unwrap(), "1 day")
     }
-    5 => {
-      (Duration::try_days(3).unwrap(), "3 days")
-    }
-    6 => {
-      (Duration::try_days(6).unwrap(), "6 days")
+    2 => {
+      (Duration::try_days(7).unwrap(), "1 week")
     }
     _ => {
       (Duration::try_days(24).unwrap(), "24 days")

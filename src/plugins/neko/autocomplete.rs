@@ -41,30 +41,3 @@ macro_rules! autocomplete {
 autocomplete!(discord_guilds, discord::schema::Guilds);
 autocomplete!(steam_apps, steam::schema::Apps);
 
-
-pub async fn findr_cities<'a>(_: Ctx<'_>, search: &'a str) -> Vec<AutocompleteChoice<String>> {
-  use findr::schema::Cities::*;
-  let mut qb = SelectStatement::new();
-  qb.from(Table);
-  qb.columns([Id, City, Region, Country]);
-  qb.and_where(
-    Expr::expr(Func::lower(Expr::col(City)))
-      .like(format!("%{}%", search.to_lowercase()))
-      .or(
-        Expr::col(Id)
-          .cast_as(Alias::new("TEXT"))
-          .like(format!("%{search}%")),
-      ),
-  );
-  qb.order_by(City, Order::Asc);
-  qb.limit(25);
-  use unicode_truncate::UnicodeTruncateStr;
-  fetch_all!(&qb, (i64, String, Option<String>, String))
-    .unwrap_or(vec![])
-    .into_iter()
-    .map(|g| AutocompleteChoice {
-      value: g.0.to_string(),
-      name: (format!("{} | {} | {}", g.1, g.2.unwrap_or(g.3.clone()), g.3)).unicode_truncate(100).0.into(),
-    })
-    .collect()
-}
