@@ -1,12 +1,10 @@
-use crate::modules::{axum::Axum, sqlx::db};
 use crate::{
   core::Err,
-  modules::reqwest::req,
+  modules::{axum::Axum, reqwest::req, sqlx::db},
+  plugins::steam::query::{update_playdata, update_users},
 };
-use crate::plugins::steam::
-query::{update_playdata, update_users};
-use axum::extract::Path;
 use axum::{
+  extract::Path,
   http::HeaderValue,
   response::{IntoResponse, Redirect, Response},
   routing::get,
@@ -273,10 +271,8 @@ once_cell!(tokenreq_github, TOKENREQ_GITHUB: String, {
 once_cell!(oauth_anilist_id, OAUTH_ANILIST_ID: String, {expect_env!("OAUTH_ANILIST_ID")});
 once_cell!(oauth_anilist_secret, OAUTH_ANILIST_SECRET: String, {expect_env!("OAUTH_ANILIST_SECRET")});
 
-
 once_cell!(oauth_minecraft_id, OAUTH_MINECRAFT_ID: String, {expect_env!("OAUTH_MINECRAFT_ID")});
 once_cell!(oauth_minecraft_secret, OAUTH_MINECRAFT_SECRET: String, {expect_env!("OAUTH_MINECRAFT_SECRET")});
-
 
 once_cell!(redirect_anilist, REDIRECT_ANILIST: String, {
   let cb = format!("{}/callback/anilist", root_domain().await);
@@ -284,7 +280,6 @@ once_cell!(redirect_anilist, REDIRECT_ANILIST: String, {
   ?client_id={}&redirect_uri={}&response_type=code&state=todo", oauth_anilist_id().await,
   urlencoding::encode(&cb))
 });
-
 
 once_cell!(redirect_minecraft, REDIRECT_MINECRAFT: String, {
   let cb = format!("{}/callback/minecraft", root_domain().await);
@@ -301,7 +296,6 @@ async fn link_minecraft() -> axum::response::Result<Response> {
   Ok(Redirect::to(redirect_minecraft().await).into_response())
 }
 
-
 async fn callback_minecraft(
   session: SessionPgSession,
   Form(cb): Form<AuthorizationCallback>,
@@ -312,56 +306,51 @@ async fn callback_minecraft(
   if cb.state != "todo" {
     return Ok(StatusCode::IM_A_TEAPOT.into_response());
   }
-  let form_str = serde_json::to_string(&DiscordTokenReq {
+  let form_str = &DiscordTokenReq {
     client_id: &"3551875741534651542",
     client_secret: &expect_env!("OAUTH_MINECRAFT_SECRET"),
     grant_type: &"authorization_code",
     code: &cb.code,
     redirect_uri: &format!("{}/callback/minecraft", root_domain().await),
-  })
-  .unwrap();
+  };
 
-  let Ok(response) = req()
+  let res = req()
     .post("https://mc-auth.com/oAuth2/token")
-    .header("Content-Type", "application/json")
-    .body(form_str)
+    .json(form_str)
     .send()
-    .await
-    .unwrap()
-    .json::<MCTokenRes>()
-    .await else {
-      
+    .await.unwrap();
+
+
+  let text = res.text().await.unwrap();
+  println!("{text}");
+
+  let Ok(response) = serde_json::from_str::<MCTokenRes>(&text) else {
     return Err("NOT VALID GWAAAA".into());
-    };
-  
-    use UsersMinecraft::*;
-    let mut qb = InsertStatement::new();
-    qb.into_table(Table);
-    qb.columns([NekoId, McUuid]);
-    qb.values([id.into(), response.data.uuid.into()]).unwrap();
-    qb.on_conflict(OnConflict::column(NekoId).do_nothing().to_owned());
-    execute!(&qb).unwrap();
-  
-    Ok(Redirect::to("/settings").into_response())
-}
+  };
 
-
-
-async fn whitelist(
-  Path(user_id): Path<Uuid>,
-) -> axum::response::Result<Response> {
   use UsersMinecraft::*;
-    let mut qb = SelectStatement::new();
-    qb.from(Table);
-    qb.columns([McUuid]);
-    qb.and_where(Expr::col(McUuid).eq(user_id));
-    if fetch_optional!(&qb, (Uuid,)).unwrap_or(None).is_some() {
-      Ok(StatusCode::OK.into_response())
-    } else {
-      Ok(StatusCode::NOT_FOUND.into_response())
-    }
+  let mut qb = InsertStatement::new();
+  qb.into_table(Table);
+  qb.columns([NekoId, McUuid]);
+  qb.values([id.into(), response.data.uuid.into()]).unwrap();
+  qb.on_conflict(OnConflict::column(NekoId).do_nothing().to_owned());
+  execute!(&qb).unwrap();
+
+  Ok(Redirect::to("/settings").into_response())
 }
 
+async fn whitelist(Path(user_id): Path<Uuid>) -> axum::response::Result<Response> {
+  use UsersMinecraft::*;
+  let mut qb = SelectStatement::new();
+  qb.from(Table);
+  qb.columns([McUuid]);
+  qb.and_where(Expr::col(McUuid).eq(user_id));
+  if fetch_optional!(&qb, (Uuid,)).unwrap_or(None).is_some() {
+    Ok(StatusCode::OK.into_response())
+  } else {
+    Ok(StatusCode::NOT_FOUND.into_response())
+  }
+}
 
 #[derive(Iden)]
 #[iden(rename = "neko_users_minecraft")]
@@ -370,8 +359,6 @@ pub enum UsersMinecraft {
   NekoId,
   McUuid,
 }
-
-
 
 async fn link_discord() -> axum::response::Result<Response> {
   Ok(Redirect::to(redirect_discord().await).into_response())
@@ -598,9 +585,10 @@ struct DiscordTokenReq<'a> {
 #[derive(serde::Deserialize)]
 struct MCTokenRes {
   data: MCData,
-}#[derive(serde::Deserialize)]
+}
+#[derive(serde::Deserialize)]
 struct MCData {
-  uuid: Uuid
+  uuid: Uuid,
 }
 #[derive(serde::Deserialize)]
 struct TokenRes {
