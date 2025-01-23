@@ -314,14 +314,12 @@ async fn callback_minecraft(
     redirect_uri: &format!("{}/callback/minecraft", root_domain().await),
   };
 
-  let res = Client::new()
+  let res = req()
     .post("https://mc-auth.com/oAuth2/token")
     .header("Accept", "application/json")
-    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0")
     .json(form_str)
     .send()
     .await.unwrap();
-
 
   let text = res.text().await.unwrap();
   println!("{text}");

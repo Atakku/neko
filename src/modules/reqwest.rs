@@ -2,6 +2,8 @@
 //
 // This project is dual licensed under MIT and Apache.
 
+use std::sync::Arc;
+use reqwest::cookie::Jar;
 use reqwest::Client;
 
 once_cell!(req, CLIENT: Client);
@@ -22,7 +24,8 @@ impl crate::core::Module for Reqwest {
   async fn init(&mut self, fw: &mut crate::core::Framework) -> crate::core::R {
     {
       runtime!(fw, |m| {
-        CLIENT.set(Client::builder().user_agent(m.user_agent).build()?)?;
+        let jar = Arc::new(Jar::default());
+        CLIENT.set(Client::builder().user_agent(m.user_agent).cookie_provider(jar.clone()).build()?)?;
         Ok(None)
       });
     }
