@@ -13,7 +13,7 @@ use axum::{
 use axum_session::{SessionConfig, SessionLayer, SessionPgSession, SessionPgSessionStore};
 use poise::serenity_prelude::json::json;
 use regex::Regex;
-use reqwest::{header, StatusCode};
+use reqwest::{header, Client, StatusCode};
 use sea_query::{Alias, Expr, Func, Iden, InsertStatement, OnConflict, Query, SelectStatement};
 use sqlx::types::Uuid;
 use url::Url;
@@ -314,9 +314,10 @@ async fn callback_minecraft(
     redirect_uri: &format!("{}/callback/minecraft", root_domain().await),
   };
 
-  let res = req()
+  let res = Client::new()
     .post("https://mc-auth.com/oAuth2/token")
     .header("Accept", "application/json")
+    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0")
     .json(form_str)
     .send()
     .await.unwrap();
