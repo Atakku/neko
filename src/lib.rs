@@ -22,8 +22,8 @@ pub mod plugins {
   pub mod discord;
   #[path="drg/plugin.rs"]
   pub mod drg;
-  //#[path="ftvroles/plugin.rs"]
-  //pub mod ftvroles;
+  #[path="ftvroles/plugin.rs"]
+  pub mod ftvroles;
   #[path="gwaaa/plugin.rs"]
   pub mod gwaaa;
   #[path="neko/plugin.rs"]

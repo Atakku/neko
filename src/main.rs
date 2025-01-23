@@ -20,7 +20,7 @@ async fn main() -> R {
     fw.init_module(beatleader::BeatLeader {}).await?;
     //fw.init_module(radio::Radio {}).await?;
     fw.init_module(welcomer::Welcomer).await?;
-    //fw.init_module(ftvroles::FTVRoles).await?;
+    fw.init_module(ftvroles::FTVRoles).await?;
     fw.init_module(starboard::Starboard).await?;
   fw.run().await?;
   Ok(())
