@@ -338,8 +338,9 @@ async fn callback_minecraft(
 async fn whitelist(Path(uuid): Path<Uuid>) -> axum::response::Result<Response> {
   use UsersMinecraft::*;
   let mut qb = SelectStatement::new();
+  println!("testing {uuid}");
   qb.from(Table);
-  qb.columns([McUuid]);
+  qb.column(McUuid);
   qb.and_where(Expr::col(McUuid).eq(uuid));
   if fetch_optional!(&qb, (Uuid,)).unwrap_or(None).is_some() {
     Ok(StatusCode::OK.into_response())
