@@ -3,6 +3,7 @@ use crate::{
   modules::{axum::Axum, reqwest::req, sqlx::db},
   plugins::steam::query::{update_playdata, update_users},
 };
+use askama::Template;
 use axum::{
   extract::Path,
   http::HeaderValue,
@@ -18,25 +19,22 @@ use sea_query::{Alias, Expr, Func, Iden, InsertStatement, OnConflict, Query, Sel
 use url::Url;
 use uuid::Uuid;
 
-async fn settings(session: SessionPgSession) -> Response {
-  let Some(id) = session.get::<i32>("neko_id") else {
-    return Redirect::to("/login").into_response();
-  };
-  let mut res = format!("your id is '{id}'<br><a href=\"/link/discord\">link a discord acc</a><br><a href=\"/link/steam\">link a steam acc</a><br><a href=\"/link/github\">link a github acc</a><br><a href=\"/link/anilist\">link an anilist acc</a> <- warning, this technically gives full anilist access to neko.rs (as their oauth endpoint does not have any scopes), go complain to joshstar or smth<br><a href=\"/link/minecraft\">link a minecraft acc</a>").into_response();
-  res
-    .headers_mut()
-    .insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
-  res
+#[derive(Template)]
+#[template(path = "login.html")]
+struct LoginPage;
+
+#[derive(Template)]
+#[template(path = "settings.html")]
+struct SettingsPage {
+  id: i32
 }
 
 async fn root(session: SessionPgSession) -> Response {
   let mut res = match session.get::<i32>("neko_id") {
-    Some(id) => format!("you are logged in as id {id}<br><a href=\"/settings\">go to settings</a>")
-      .into_response(),
-    None => {
-      format!("you are not logged in<br><a href=\"/login\">i wanna log in</a>").into_response()
-    }
-  };
+    Some(id) => 
+    SettingsPage {id}.render(),
+    None => LoginPage.render()
+  }.unwrap().into_response();
   res
     .headers_mut()
     .insert(header::CONTENT_TYPE, HeaderValue::from_static("text/html"));
@@ -106,7 +104,7 @@ impl crate::core::Module for Gwaaa {
             r.route("/", get(root))
               .route("/login", get(login_now))
               .route("/logout", get(logout))
-              .route("/settings", get(settings))
+              //.route("/settings", get(settings))
               .route("/whitelist", get(whitelist))
               .route("/callback/anilist", get(callback_anilist))
               .route("/callback/github", get(callback_github))
