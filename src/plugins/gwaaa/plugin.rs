@@ -5,7 +5,6 @@ use crate::{
 };
 use askama::Template;
 use axum::{
-  extract::Path,
   http::HeaderValue,
   response::{IntoResponse, Redirect, Response},
   routing::get,
@@ -14,7 +13,7 @@ use axum::{
 use axum_session::{SessionConfig, SessionLayer, SessionPgSession, SessionPgSessionStore};
 use poise::serenity_prelude::json::json;
 use regex::Regex;
-use reqwest::{header, Client, StatusCode};
+use reqwest::{header, StatusCode};
 use sea_query::{Alias, Expr, Func, Iden, InsertStatement, OnConflict, Query, SelectStatement};
 use url::Url;
 use uuid::Uuid;
@@ -95,7 +94,6 @@ impl crate::core::Module for Gwaaa {
             r.route("/", get(root))
               .route("/login", get(login_now))
               .route("/logout", get(logout))
-              //.route("/settings", get(settings))
               .route("/whitelist", get(whitelist))
               .route("/callback/anilist", get(callback_anilist))
               .route("/callback/github", get(callback_github))
@@ -223,7 +221,7 @@ async fn callback_steam(
   let c = vec![(steam_id,)];
   update_users(&c).await.unwrap();
   update_playdata(&c).await.unwrap();
-  Ok(Redirect::to("/settings").into_response())
+  Ok(Redirect::to("/").into_response())
 }
 
 once_cell!(root_domain, ROOT_DOMAIN: String, {expect_env!("ROOT_DOMAIN")});
@@ -321,7 +319,7 @@ async fn callback_minecraft(
   qb.on_conflict(OnConflict::column(NekoId).do_nothing().to_owned());
   execute!(&qb).unwrap();
 
-  Ok(Redirect::to("/settings").into_response())
+  Ok(Redirect::to("/").into_response())
 }
 
 async fn whitelist(
@@ -434,7 +432,7 @@ async fn callback_discord(
       .to_owned(),
   );
   execute!(&qb).unwrap();
-  Ok(Redirect::to("/settings").into_response())
+  Ok(Redirect::to("/").into_response())
 }
 
 async fn callback_github(
@@ -484,7 +482,7 @@ async fn callback_github(
       .to_owned(),
   );
   execute!(&qb).unwrap();
-  Ok(Redirect::to("/settings").into_response())
+  Ok(Redirect::to("/").into_response())
 }
 
 async fn callback_anilist(
@@ -541,7 +539,7 @@ async fn callback_anilist(
       .to_owned(),
   );
   execute!(&qb).unwrap();
-  Ok(Redirect::to("/settings").into_response())
+  Ok(Redirect::to("/").into_response())
 }
 
 #[derive(serde::Serialize)]
