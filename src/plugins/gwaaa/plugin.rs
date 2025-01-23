@@ -317,7 +317,7 @@ async fn callback_minecraft(
     client_secret: &expect_env!("OAUTH_MINECRAFT_SECRET"),
     grant_type: &"authorization_code",
     code: &cb.code,
-    redirect_uri: &format!("{}/callback/discord", root_domain().await),
+    redirect_uri: &format!("{}/callback/minecraft", root_domain().await),
   })
   .unwrap();
 
