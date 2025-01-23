@@ -107,6 +107,7 @@ impl crate::core::Module for Gwaaa {
               .route("/login", get(login_now))
               .route("/logout", get(logout))
               .route("/settings", get(settings))
+              .route("/whitelist", get(whitelist))
               .route("/callback/anilist", get(callback_anilist))
               .route("/callback/github", get(callback_github))
               .route("/callback/steam", get(callback_steam))
@@ -118,7 +119,6 @@ impl crate::core::Module for Gwaaa {
               .route("/link/discord", get(link_discord))
               .route("/link/minecraft", get(link_minecraft))
               .layer(SessionLayer::new(session_store))
-              .route("/whitelist/{uuid}", get(whitelist))
               .route("/metrics", get(metrics)),
           )
         })
@@ -196,7 +196,7 @@ async fn link_steam() -> axum::response::Result<Response> {
 // who needs actual error handling tbh
 async fn callback_steam(
   session: SessionPgSession,
-  Form(cb): Form<VerifyForm>,
+  Form(cb): Form<VerifyForm>
 ) -> axum::response::Result<Response> {
   let Some(id) = session.get::<i32>("neko_id") else {
     return Ok(Redirect::to("/login").into_response());
@@ -335,13 +335,14 @@ async fn callback_minecraft(
   Ok(Redirect::to("/settings").into_response())
 }
 
-async fn whitelist(Path(uuid): Path<Uuid>) -> axum::response::Result<Response> {
-  println!("uuid: {uuid}");
+async fn whitelist(
+  Form(q): Form<Bruh>) -> axum::response::Result<Response> {
+  println!("uuid: {}", q.uuid);
   use UsersMinecraft::*;
   let mut qb = SelectStatement::new();
   qb.from(Table);
   qb.column(McUuid);
-  qb.and_where(Expr::col(McUuid).eq(uuid));
+  qb.and_where(Expr::col(McUuid).eq(q.uuid));
   if fetch_optional!(&qb, (Uuid,)).unwrap_or(None).is_some() {
     Ok(StatusCode::OK.into_response())
   } else {
@@ -569,6 +570,11 @@ struct AuthorizationCallback {
   code: String,
   state: String,
 }
+#[derive(serde::Deserialize)]
+struct Bruh {
+  uuid: String
+}
+
 
 #[derive(serde::Serialize, Debug)]
 struct DiscordTokenReq<'a> {
