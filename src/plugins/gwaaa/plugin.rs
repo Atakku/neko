@@ -325,11 +325,19 @@ async fn callback_minecraft(
 async fn whitelist(
   Form(q): Form<Bruh>) -> axum::response::Result<Response> {
   println!("uuid: {}", q.uuid);
-  use UsersMinecraft::*;
   let mut qb = SelectStatement::new();
-  qb.from(Table);
-  qb.column(McUuid);
-  qb.and_where(Expr::col(McUuid).eq(q.uuid));
+  qb.from(UsersMinecraft::Table);
+  qb.column(UsersMinecraft::McUuid);
+  qb.and_where(Expr::col(UsersMinecraft::McUuid).eq(q.uuid));
+  
+  use super::neko::schema::UsersDiscord;
+  qb.from(UsersDiscord::Table);
+  qb.and_where(ex_col!(UsersMinecraft, NekoId).equals(col!(UsersDiscord, NekoId)));
+  
+  use super::discord::schema::Members;
+  qb.from(Members::Table);
+  qb.and_where(ex_col!(Members, UserId).equals(col!(UsersDiscord, DiscordId)));
+
   if fetch_optional!(&qb, (Uuid,)).unwrap_or(None).is_some() {
     Ok(StatusCode::OK.into_response())
   } else {
