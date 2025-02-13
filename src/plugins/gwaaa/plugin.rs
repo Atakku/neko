@@ -342,11 +342,15 @@ async fn whitelist(
   qb.and_where(ex_col!(Users, Id).equals(col!(UsersDiscord, DiscordId)));
   qb.column(col!(Users, Id));
 
-  if let Ok((name,)) = fetch_one!(&qb, (String,)) {
-    Ok(name.into_response())
-  } else {
-    Ok(StatusCode::NOT_FOUND.into_response())
-  }
+  Ok(match fetch_one!(&qb, (String,)) {
+    Ok((name,)) => {
+      name.into_response()
+    },
+    Result::Err(err) => {
+      log::error!("Error when getting whitelist: {err}");
+      StatusCode::NOT_FOUND.into_response()
+    },
+  })
 }
 
 #[derive(Iden)]
