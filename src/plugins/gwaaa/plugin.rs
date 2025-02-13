@@ -340,7 +340,7 @@ async fn whitelist(
   use super::discord::schema::Users;
   qb.from(Users::Table);
   qb.and_where(ex_col!(Users, Id).equals(col!(UsersDiscord, DiscordId)));
-  qb.column(col!(Users, Id));
+  qb.column(col!(Users, Name));
 
   Ok(match fetch_one!(&qb, (String,)) {
     Ok((name,)) => {
