@@ -327,7 +327,6 @@ async fn whitelist(
   println!("uuid: {}", q.uuid);
   let mut qb = SelectStatement::new();
   qb.from(UsersMinecraft::Table);
-  qb.column(UsersMinecraft::McUuid);
   qb.and_where(Expr::col(UsersMinecraft::McUuid).eq(q.uuid));
   
   use super::neko::schema::UsersDiscord;
@@ -338,8 +337,13 @@ async fn whitelist(
   qb.from(Members::Table);
   qb.and_where(ex_col!(Members, UserId).equals(col!(UsersDiscord, DiscordId)));
 
-  if fetch_optional!(&qb, (Uuid,)).unwrap_or(None).is_some() {
-    Ok(StatusCode::OK.into_response())
+  use super::discord::schema::Users;
+  qb.from(Users::Table);
+  qb.and_where(ex_col!(Users, Id).equals(col!(UsersDiscord, DiscordId)));
+  qb.column(col!(Users, Id));
+
+  if let Ok((name,)) = fetch_one!(&qb, (String,)) {
+    Ok(name.into_response())
   } else {
     Ok(StatusCode::NOT_FOUND.into_response())
   }
