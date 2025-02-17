@@ -322,8 +322,7 @@ async fn callback_minecraft(
   Ok(Redirect::to("/").into_response())
 }
 
-async fn whitelist(
-  Form(q): Form<Bruh>) -> axum::response::Result<Response> {
+async fn whitelist(Form(q): Form<Bruh>) -> axum::response::Result<Response> {
   println!("uuid: {}", q.uuid);
   let mut qb = SelectStatement::new();
   qb.from(UsersMinecraft::Table);
@@ -341,10 +340,11 @@ async fn whitelist(
   qb.from(Users::Table);
   qb.and_where(ex_col!(Users, Id).equals(col!(UsersDiscord, DiscordId)));
   qb.column(col!(Users, Name));
+  qb.column(col!(Users, Id));
 
-  Ok(match fetch_one!(&qb, (String,)) {
-    Ok((name,)) => {
-      name.into_response()
+  Ok(match fetch_one!(&qb, (String, i64)) {
+    Ok((name, id)) => {
+      format!("{name}\n{id}").into_response()
     },
     Result::Err(err) => {
       log::error!("Error when getting whitelist: {err}");
