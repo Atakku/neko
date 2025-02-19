@@ -1,5 +1,5 @@
 use crate::{
-  core::Err,
+  core::{Err, Res},
   modules::{axum::Axum, reqwest::req, sqlx::db},
   plugins::steam::query::{update_playdata, update_users},
 };
@@ -11,7 +11,7 @@ use axum::{
   Form, Json,
 };
 use axum_session::{SessionConfig, SessionLayer, SessionPgSession, SessionPgSessionStore};
-use poise::serenity_prelude::json::json;
+use poise::serenity_prelude::{json::json, UserId};
 use regex::Regex;
 use reqwest::{header, StatusCode};
 use sea_query::{Alias, Expr, Func, Iden, InsertStatement, OnConflict, Query, SelectStatement};
@@ -359,6 +359,24 @@ pub enum UsersMinecraft {
   Table,
   NekoId,
   McUuid,
+}
+
+pub async fn get_mc_users() -> Res<Vec<UserId>> {
+  let mut qb = Query::select();
+  
+  use super::neko::schema::UsersDiscord;
+  use super::gwaaa::UsersMinecraft;
+  qb.from(UsersMinecraft::Table);
+  qb.from(UsersDiscord::Table);
+  qb.and_where(ex_col!(UsersMinecraft, NekoId).equals(col!(UsersDiscord, NekoId)));
+  qb.column(col!(UsersDiscord, DiscordId));
+
+  Ok(
+    fetch_all!(&qb, (i64,))?
+      .into_iter()
+      .map(|r| UserId(r.0 as u64))
+      .collect(),
+  )
 }
 
 async fn link_discord() -> axum::response::Result<Response> {

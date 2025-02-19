@@ -15,7 +15,7 @@ use crate::{
 use poise::{
   serenity_prelude::{
     ButtonStyle, CollectComponentInteraction, CreateActionRow, InteractionResponseType, Member,
-    ReactionType, Role, RoleId,
+    ReactionType, Role, RoleId, UserId,
   },
   Event,
 };
@@ -61,6 +61,7 @@ fn roles() -> EventHandler {
     })
   }
 }
+
 
 pub async fn get_roles(m: &Member) -> Res<Vec<RoleId>> {
   use crate::plugins::{neko::schema as neko, steam::schema as steam};
