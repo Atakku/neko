@@ -10,7 +10,7 @@ use crate::{
   },
 };
 use futures::StreamExt;
-use poise::serenity_prelude::RoleId;
+use poise::serenity_prelude::{Role, RoleId};
 
 // Util module for maintenance commands
 pub struct Atakku;
@@ -54,6 +54,9 @@ async fn update_beatleader(ctx: Ctx<'_>) -> R {
   Ok(())
 }
 
+const MCROLE: RoleId = RoleId(1341770285082214462);
+use itertools::Itertools;
+
 #[poise::command(prefix_command, hide_in_help, owners_only)]
 async fn update_roles(ctx: Ctx<'_>) -> R {
   let m = ctx.reply("Updating steam roles...").await?;
@@ -66,9 +69,10 @@ async fn update_roles(ctx: Ctx<'_>) -> R {
       match member_result {
         Ok(mut m) => {
           if !m.user.bot {
-            let mut roles = filter_roles(m.roles(ctx).unwrap_or_default(), get_roles(&m).await?);
-            if mcusers.contains(&m.user.id) {
-              roles.push(RoleId(1341770285082214462));
+            let ogroles = m.roles(ctx).unwrap_or_default();
+            let mut roles = filter_roles(&ogroles, get_roles(&m).await?);
+            if mcusers.contains(&m.user.id) && !ogroles.iter().map(|a|a.id).contains(&MCROLE) {
+              roles.push(MCROLE);
             }
             if !roles.is_empty() {
               m.add_roles(ctx, roles.as_slice()).await?;

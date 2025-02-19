@@ -50,7 +50,7 @@ fn roles() -> EventHandler {
       match event {
         GuildMemberAddition { new_member: m } => {
           if !m.user.bot {
-            let roles = filter_roles(m.roles(c).unwrap_or_default(), get_roles(m).await?);
+            let roles = filter_roles(&m.roles(c).unwrap_or_default(), get_roles(m).await?);
             let mut member = m.guild_id.member(c, m.user.id).await?;
             member.add_roles(c, roles.as_slice()).await?;
           }
@@ -86,7 +86,7 @@ pub async fn get_roles(m: &Member) -> Res<Vec<RoleId>> {
   )
 }
 
-pub fn filter_roles(og: Vec<Role>, add: Vec<RoleId>) -> Vec<RoleId> {
+pub fn filter_roles(og: &Vec<Role>, add: Vec<RoleId>) -> Vec<RoleId> {
   let mapped: Vec<u64> = og.into_iter().map(|r| r.id.0).collect();
   add.into_iter().filter(|r| !mapped.contains(&r.0)).collect()
 }
