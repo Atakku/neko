@@ -199,6 +199,8 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
     By::Playtime => "hours",
     By::Ownership => "copies",
   };
+
+  let isuser = Of::Users == of;
   let divider = By::Playtime == by;
   let qb = build_top_query(of, by, at);
 
@@ -214,10 +216,15 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
     //}
     let data = fetch_all!(&pb, QueryOutput)?;
     let mut output = String::new();
-    let data: Vec<_> = data.into_iter().map(|a| (if divider { fmt_sec(a.sum_count * 60) } else { format!("{}", a.sum_count)}, a.id) ).collect();
-    let max = data.iter().map(|(a,b)|a.len()).max().unwrap_or(5);
-    for (c, id) in data {
-      output += &format!("`{c: >max$}` <@{id}>\n");
+    let data: Vec<_> = data.into_iter().map(|a| (if divider { fmt_sec(a.sum_count * 60) } else { format!("{}", a.sum_count)}, a.id, a.name) ).collect();
+    let max = data.iter().map(|(a,b,c)|a.len()).max().unwrap_or(5);
+    for (c, id, name) in data {
+      if (isuser) {
+
+        output += &format!("`{c: >max$}` <@{id}>\n");
+      } else {
+        output += &format!("`{c: >max$} | {name}` \n");
+      }
     }
     Ok(output)
   };

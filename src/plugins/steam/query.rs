@@ -156,7 +156,7 @@ pub enum At {
   None,
 }
 
-#[derive(ChoiceParameter)]
+#[derive(ChoiceParameter, PartialEq)]
 pub enum Of {
   Apps,   // Top apps in user, or guild, by hours or count
   Users,  // Top users by app hours or app count, in gyuk
