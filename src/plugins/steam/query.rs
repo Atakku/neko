@@ -144,7 +144,7 @@ pub async fn update_playdata(user_list: &Vec<(i64,)>) -> R {
   Ok(())
 }
 
-#[derive(ChoiceParameter)]
+#[derive(ChoiceParameter, PartialEq)]
 pub enum By {
   Playtime,
   Ownership, // TODO: TopCompleteon (achievemetns)
@@ -243,7 +243,7 @@ fn member_eq(qb: &mut SelectStatement) {
   );
 }
 
-#[derive(FromRow)]
+#[derive(FromRow, Clone)]
 pub struct QueryOutput {
   pub row_num: i64,
   pub sum_count: i64,

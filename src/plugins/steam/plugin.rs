@@ -147,6 +147,43 @@ mod app {
 const SIZE: u64 = 15;
 const PAGES: u64 = 100; //todo
 
+fn divdec(f: i64, s: i64) -> (i64, i64) {
+  (f / s, f * 10 / s % 10)
+}
+
+fn fmt_sec(num: i64) -> String {
+  let (mf, md) = divdec(num, 60);
+  let (hf, hd) = divdec(num, 3600);
+  let (df, dd) = divdec(num, 86400);
+  let (wf, wd) = divdec(num, 604800);
+  let (yf, yd) = divdec(num, 31556926);
+
+  if mf < 1 {
+    format!("{num}s")
+  } else if mf < 10 {
+    format!("{mf}.{md}m")
+  } else if hf < 1 {
+    format!("{mf}m")
+  } else if hf < 10 {
+    format!("{hf}.{hd}h")
+  } else if df < 1 {
+    format!("{hf}h")
+  } else if df < 10 {
+    format!("{df}.{dd}d")
+  } else if wf < 1 {
+    format!("{df}d")
+  } else if wf < 10 {
+    format!("{wf}.{wd}w")
+  } else if yf < 1 {
+    format!("{wf}w")
+  } else if yf < 10 {
+    format!("{yf}.{yd}y")
+  } else {
+    format!("{yf}y")
+  }
+}
+
+
 async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
   let mut msg = ctx
     .send(|b| {
@@ -162,27 +199,25 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
     By::Playtime => "hours",
     By::Ownership => "copies",
   };
-  let divider = if let By::Playtime = by { 60 } else { 1 };
+  let divider = By::Playtime == by;
   let qb = build_top_query(of, by, at);
 
   let get_page = async move |page: u64| -> Res<String> {
     let mut pb = qb.clone();
-    if page == 0 {
-      pb.limit(SIZE + 1);
-    } else {
-      pb.limit(SIZE + 2);
-      pb.offset(page * SIZE - 1);
-    }
+    pb.limit(SIZE);
+    pb.offset(page * SIZE);
+    //if page == 0 {
+    //  pb.limit(SIZE + 1);
+    //} else {
+    //  pb.limit(SIZE + 2);
+    //  pb.offset(page * SIZE - 1);
+    //}
     let data = fetch_all!(&pb, QueryOutput)?;
     let mut output = String::new();
-    for (i, d) in data.iter().enumerate() {
-      if i == SIZE as usize && page == 0 || i == SIZE as usize + 1 && page != 0 {
-        output += "-------------------\n"
-      }
-      output += &format!("{} | {} | {}\n", d.row_num, d.sum_count / divider, d.name);
-      if i == 0 && page != 0 {
-        output += "-------------------\n"
-      }
+    let data: Vec<_> = data.into_iter().map(|a| (if divider { fmt_sec(a.sum_count * 60) } else { format!("{}", a.sum_count)}, a.id) ).collect();
+    let max = data.iter().map(|(a,b)|a.len()).max().unwrap_or(5);
+    for (c, id) in data {
+      output += &format!("`{c: >max$}` <@{id}>\n");
     }
     Ok(output)
   };
@@ -192,7 +227,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
 
   msg
     .edit(ctx, |b| {
-      b.content(format!("{input}\n```\n# | {bys} | name \n{firstpage}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", ctx.locale().unwrap_or("none")))
+      b.content(format!("{input}\n{firstpage}\nTo add your steam to this list, head over to https://link.neko.rs"))
         .components(|b| {
           b.create_action_row(|b| pagination_buttons(b, page, PAGES, false, "".into()))
         })
@@ -230,7 +265,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
     let mut msg = press.get_interaction_response(ctx).await?;
     msg
       .edit(ctx, |b| {
-        b.content(format!("{input}\n```\n# | {bys} | name \n{pageee}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", ctx.locale().unwrap_or("none")))
+        b.content(format!("{input}\n{pageee}\nTo add your steam to this list, head over to https://link.neko.rs"))
           .components(|b| {
             b.create_action_row(|b| {
               pagination_buttons(b, page, PAGES, false, press.data.custom_id.clone())
