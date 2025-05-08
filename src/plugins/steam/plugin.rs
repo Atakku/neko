@@ -125,7 +125,10 @@ mod user {
   }
 }
 mod app {
-  use crate::{
+  use sea_query::Query;
+use sqlx::Column;
+
+use crate::{
     core::R,
     modules::poise::Ctx,
     plugins::{
@@ -139,7 +142,15 @@ mod app {
 
   #[poise::command(prefix_command, slash_command)]
   pub async fn top(ctx: Ctx<'_>, by: By, #[autocomplete = "steam_apps"] app: i32) -> R {
-    let title = format!("Apps's ({app}) top of users by {by}");
+    
+    use super::schema::Apps::{self, *};
+    let mut qb = Query::select();
+    qb.from(Table);
+    qb.columns([Name]);
+    qb.and_where(ex_col!(Apps, Id).eq(app));
+    let (name,) = fetch_one!(&qb, (String,)).unwrap();
+
+    let title = format!("Top ({name}) gamers by {by}");
     handle(ctx, title, Of::Users, by, At::App(app)).await
   }
 }
