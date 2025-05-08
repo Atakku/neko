@@ -150,7 +150,7 @@ use crate::{
     qb.and_where(ex_col!(Apps, Id).eq(app));
     let (name,) = fetch_one!(&qb, (String,)).unwrap();
 
-    let title = format!("Top ({name}) gamers by {by}");
+    let title = format!("Top {name} gamers by {by}");
     handle(ctx, title, Of::Users, by, At::App(app)).await
   }
 }
