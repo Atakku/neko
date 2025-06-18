@@ -142,7 +142,6 @@ use crate::{
 
   #[poise::command(prefix_command, slash_command)]
   pub async fn top(ctx: Ctx<'_>, by: By, #[autocomplete = "steam_apps"] app: i32) -> R {
-    
     use super::schema::Apps::{self, *};
     let mut qb = Query::select();
     qb.from(Table);
