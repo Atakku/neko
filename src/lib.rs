@@ -30,8 +30,6 @@ pub mod plugins {
   pub mod neko;
   //#[path="radio/plugin.rs"]
   //pub mod radio;
-  #[path="starboard/plugin.rs"]
-  pub mod starboard;
   #[path="steam/plugin.rs"]
   pub mod steam;
   //#[path="warnsys/plugin.rs"]
