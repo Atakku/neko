@@ -8,8 +8,6 @@ use poise::{
   BoxFuture, Event,
 };
 
-pub mod schema;
-
 /// Module with femboy.tv discord server functionality
 pub struct FTVRoles;
 
