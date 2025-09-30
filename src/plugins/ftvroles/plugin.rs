@@ -131,7 +131,6 @@ const ROLES: &[(&str, &[(u64, &str, bool, &str)])] = &[
     **💩 - Shitpost** (For funny, or not so funny things)\n\
     **🍿 - Movie Night** (Pinged whenever we do a movie night :3)\n\
     **👋 - Welcome** (Get notified every time someone gets verified)\n\
-    **<:dumkisser:1291846838084702228> - GAY SEX ROLE** (Get notified when <https://discord.com/channels/1232659990993702943/1247639243476439123> occurs)\n\
     **🔌 - Pingplug** (Free for all, take at your own risk)",
     &[
       (1233042177408368652, "📢", false, ""),
@@ -140,7 +139,6 @@ const ROLES: &[(&str, &[(u64, &str, bool, &str)])] = &[
       (1233042174904373248, "💩", false, ""),
       (1342096453425823805, "🍿", false, ""),
       (1277279750469062667, "👋", false, ""),
-      (1282780019457785907, "1291846838084702228", true, ""),
       (1233042180252237834, "🔌", false, ""),
     ],
   ),
