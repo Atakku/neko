@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
   core::{Err, Res},
   modules::{axum::Axum, reqwest::req, sqlx::db},
@@ -68,6 +70,7 @@ async fn login_now(session: SessionPgSession) -> Response {
 }
 
 once_cell!(sid_regex, REGEX: Regex);
+once_cell!(mc_regex, MCNAMEREGEX: Regex);
 
 #[derive(Default)]
 pub struct Gwaaa;
@@ -79,6 +82,9 @@ impl crate::core::Module for Gwaaa {
       fw.req_module::<crate::modules::sqlx::Postgres>().await?;
       REGEX.set(Regex::new(
         "^https://steamcommunity.com/openid/id/([0-9]{17})$",
+      )?)?;
+      MCNAMEREGEX.set(Regex::new(
+        "[^a-zA-Z0-9_].",
       )?)?;
 
       let axum = fw.req_module::<Axum>().await?;
@@ -339,12 +345,17 @@ async fn whitelist(Form(q): Form<Bruh>) -> axum::response::Result<Response> {
   use super::discord::schema::Users;
   qb.from(Users::Table);
   qb.and_where(ex_col!(Users, Id).equals(col!(UsersDiscord, DiscordId)));
+  qb.column(col!(Members, Nick));
   qb.column(col!(Users, Name));
   qb.column(col!(Users, Id));
 
-  Ok(match fetch_one!(&qb, (String, i64)) {
-    Ok((name, id)) => {
-      format!("{name}\n{id}").into_response()
+  Ok(match fetch_one!(&qb, (Option<String>, String, i64)) {
+    Ok((nick, name, id)) => {
+      let mut fancy = nick.map(|n| mc_regex().replace_all(n.replace(" ", "_").replace("__", "_").replace("..", ".").as_str(), "").to_string()).unwrap_or(name.to_string());
+      if fancy.len() < 2 {
+        fancy = name;
+      }
+      format!("{fancy}\n{id}").into_response()
     },
     Result::Err(err) => {
       log::error!("Error when getting whitelist: {err}");
