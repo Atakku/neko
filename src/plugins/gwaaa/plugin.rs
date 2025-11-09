@@ -340,6 +340,7 @@ async fn whitelist(Form(q): Form<Bruh>) -> axum::response::Result<Response> {
   
   use super::discord::schema::Members;
   qb.from(Members::Table);
+  qb.and_where(ex_col!(Members, GuildId).eq(1404602275401568347_i64));
   qb.and_where(ex_col!(Members, UserId).equals(col!(UsersDiscord, DiscordId)));
 
   use super::discord::schema::Users;
