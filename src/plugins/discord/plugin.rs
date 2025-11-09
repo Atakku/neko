@@ -53,7 +53,7 @@ fn event_handler() -> EventHandler {
               .into_iter()
               .filter_map(Result::ok)
               .filter(|m| !m.user.bot)
-              .filter(|m| g.id == 1404602275401568347 || m.roles.contains(&RoleId::from(1232817578037084262))) 
+              .filter(|m| g.id.0 == 1404602275401568347 || m.roles.contains(&RoleId::from(1232817578037084262)))
               .collect();
             let users: Vec<_> = members.clone().into_iter().map(|m| m.user).collect();
             update_users(users).await?;

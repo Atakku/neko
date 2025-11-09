@@ -103,7 +103,7 @@ pub async fn beetleader(ctx: Ctx<'_>) -> R {
 
   msg
     .edit(ctx, |b| {
-      b.content(format!("{input}\n```\n# | pp | name \n{firstpage}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", ctx.locale().unwrap_or("none")))
+      b.content(format!("{input}\n```\n# | pp | name \n{firstpage}```\nTo add your steam to this list, head over to <https://link.neko.rs>\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", ctx.locale().unwrap_or("none")))
         .components(|b| {
           b.create_action_row(|b| pagination_buttons(b, page, PAGES, false, "".into()))
         })
@@ -141,7 +141,7 @@ pub async fn beetleader(ctx: Ctx<'_>) -> R {
     let mut msg = press.get_interaction_response(ctx).await?;
     msg
       .edit(ctx, |b| {
-        b.content(format!("{input}\n```\n# | pp | name \n{pageee}```\nTo add your steam to this list, head over to https://link.neko.rs\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", ctx.locale().unwrap_or("none")))
+        b.content(format!("{input}\n```\n# | pp | name \n{pageee}```\nTo add your steam to this list, head over to <https://link.neko.rs>\nThis bot is still in early development, so bear with the bad design, feedback is appreciated\nDebug locale: {}", ctx.locale().unwrap_or("none")))
           .components(|b| {
             b.create_action_row(|b| {
               pagination_buttons(b, page, PAGES, false, press.data.custom_id.clone())

@@ -244,7 +244,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
 
   msg
     .edit(ctx, |b| {
-      b.content(format!("{input}\n{firstpage}\nTo add your steam to this list, head over to https://link.neko.rs"))
+      b.content(format!("{input}\n{firstpage}\nTo add your steam to this list, head over to <https://link.neko.rs>"))
         .components(|b| {
           b.create_action_row(|b| pagination_buttons(b, page, PAGES, false, "".into()))
         })
@@ -282,7 +282,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
     let mut msg = press.get_interaction_response(ctx).await?;
     msg
       .edit(ctx, |b| {
-        b.content(format!("{input}\n{pageee}\nTo add your steam to this list, head over to https://link.neko.rs"))
+        b.content(format!("{input}\n{pageee}\nTo add your steam to this list, head over to <https://link.neko.rs>"))
           .components(|b| {
             b.create_action_row(|b| {
               pagination_buttons(b, page, PAGES, false, press.data.custom_id.clone())
