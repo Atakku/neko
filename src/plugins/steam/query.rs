@@ -163,7 +163,7 @@ pub enum Of {
 }
 
 // Top of (Apps, Guilds, Users) by (Playtime, Ownership) at (User, Guild, App, Global)
-pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
+pub fn build_top_query(of: Of, by: By, at: At, server: i64) -> SelectStatement {
   let mut qb = Query::select();
   qb.from(super::schema::Playdata::Table);
   nekoid_eq(&mut qb);
@@ -220,7 +220,7 @@ pub fn build_top_query(of: Of, by: By, at: At) -> SelectStatement {
     At::App(id) => qb.and_where(ex_col!(steam::schema::Playdata, AppId).eq(id)),
     At::None => &qb,
   };
-  qb.and_where(ex_col!(discord::schema::Members, GuildId).eq(1232659990993702943_i64));
+  qb.and_where(ex_col!(discord::schema::Members, GuildId).eq(server));
   qb.order_by(Alias::new("sum_count"), Order::Desc);
   qb
 }

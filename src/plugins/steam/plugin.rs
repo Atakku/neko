@@ -212,7 +212,7 @@ async fn handle(ctx: Ctx<'_>, input: String, of: Of, by: By, at: At) -> R {
 
   let isuser = Of::Users == of;
   let divider = By::Playtime == by;
-  let qb = build_top_query(of, by, at);
+  let qb = build_top_query(of, by, at, ctx.guild_id().map(|a| a.0 as i64).unwrap_or(1232659990993702943));
 
   let get_page = async move |page: u64| -> Res<String> {
     let mut pb = qb.clone();
