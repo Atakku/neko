@@ -90,7 +90,7 @@ fn event_handler() -> EventHandler {
         } => {
           if !m.user.bot && check_guild_whitelist(m.guild_id).await? {
             update_users(vec![m.user.clone()]).await?;
-            if m.roles.contains(&RoleId(1232817578037084262)) {
+            if m.guild_id == 1404602275401568347 || m.roles.contains(&RoleId(1232817578037084262)) {
               update_members(vec![m.clone()]).await?;
             } else {
               remove_member(m.guild_id, m.user.id).await?;
